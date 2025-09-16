@@ -1,14 +1,6 @@
-# This file is a template, and might need editing before it works on your project.
-# Full project: https://gitlab.com/pages/plain-html
-
-image: busybox
-
-pages:
-  stage: deploy
+create_file:
+  image: alpine
   script:
-    - echo "The site will be deployed to $CI_PAGES_URL"
-  artifacts:
-    paths:
-      - public
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - echo "Building ..."
+    - mkdir build
+    - touch build/somefile.txt
