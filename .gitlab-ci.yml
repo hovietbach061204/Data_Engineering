@@ -10,7 +10,7 @@ create_file:
     - mkdir build
     - touch build/somefile.txt
   artifacts:
-    path: 
+    paths: 
       - build/
 
 test_file:
