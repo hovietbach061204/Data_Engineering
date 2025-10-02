@@ -1,20 +1,39 @@
 stages:
-  - build
-  - test
+  - lint
+  - validate
+  - security
 
-create_file:
-  image: alpine
-  stage: build
+lint_code:
+  image: python:3.11
+  stage: lint
   script:
-    - echo "Building ..."
-    - mkdir build
-    - touch build/somefile.txt
-  artifacts:
-    paths: 
-      - build/
+    - pip install flake8
+    - flake8 .
 
-test_file:
-  image: alpine
-  stage: test
+# === Commit Message Validation ===
+commit_message_lint:
+  image: alpine:latest
+  stage: validate
   script:
-    - test -f build/somefile.txt
+    - apk add --no-cache git grep
+    - MSG="$(git log -1 --pretty=%B)"
+    - echo "Last commit message: $MSG"
+    - echo "$MSG" | grep -Eq '^(feat|fix|chore|docs|refactor|test|perf|build|ci|revert)(\([a-z0-9._-]+\))?: .{10,}$'
+  only:
+    - merge_requests
+    - branches
+
+# === Branch Name Validation ===
+branch_name_lint:
+  image: alpine:latest
+  stage: validate
+  script:
+    - echo "Branch name: $CI_COMMIT_REF_NAME"
+    - echo "$CI_COMMIT_REF_NAME" | grep -Eq '^(feature|fix|hotfix|chore|refactor|docs|test|perf|build|ci|release)/[0-9]{1,6}-[a-z0-9._-]+$'
+  only:
+    - merge_requests
+    - branches
+
+# === Secret Detection (GitLab built-in) ===
+include:
+  - template: Security/Secret-Detection.gitlab-ci.yml
