@@ -10,7 +10,6 @@ lint_code:
     - pip install flake8
     - flake8 .
 
-# === Commit Message Validation ===
 commit_message_lint:
   image: alpine:latest
   stage: validate
@@ -21,10 +20,8 @@ commit_message_lint:
       echo "Last commit message: $MSG"
       echo "$MSG" | grep -Eq '^(feat|fix|chore|docs|refactor|test|perf|build|ci|revert)(\([a-z0-9._-]+\))?: .{10,}$'
   rules:
-    # Run on pushes and MRs to any branch
     - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"'
 
-# === Branch Name Validation ===
 branch_name_lint:
   image: alpine:latest
   stage: validate
@@ -33,13 +30,15 @@ branch_name_lint:
       echo "Branch: $CI_COMMIT_REF_NAME"
       echo "$CI_COMMIT_REF_NAME" | grep -Eq '^(feature|fix|hotfix|chore|refactor|docs|test|perf|build|ci|release)/[0-9]{1,6}-[a-z0-9._-]+$'
   rules:
-    # Don't run this job on mainline/prod branches
     - if: '$CI_COMMIT_BRANCH =~ /^(master|main|production\/.*)$/'
       when: never
-    # Run on pushes and MRs for all other branches
     - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"'
       when: on_success
 
-# === Secret Detection (GitLab built-in) ===
+# Include GitLab Secret Detection template
 include:
   - template: Security/Secret-Detection.gitlab-ci.yml
+
+# Override its default stage ("test") to match your pipeline
+secret_detection:
+  stage: security
