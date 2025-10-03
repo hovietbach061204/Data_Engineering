@@ -15,24 +15,30 @@ commit_message_lint:
   image: alpine:latest
   stage: validate
   script:
-    - apk add --no-cache git grep
-    - MSG="$(git log -1 --pretty=%B)"
-    - echo "Last commit message: $MSG"
-    - echo "$MSG" | grep -Eq '^(feat|fix|chore|docs|refactor|test|perf|build|ci|revert)(\([a-z0-9._-]+\))?: .{10,}$'
-  only:
-    - merge_requests
-    - branches
+    - |
+      apk add --no-cache git grep
+      MSG="$(git log -1 --pretty=%B)"
+      echo "Last commit message: $MSG"
+      echo "$MSG" | grep -Eq '^(feat|fix|chore|docs|refactor|test|perf|build|ci|revert)(\([a-z0-9._-]+\))?: .{10,}$'
+  rules:
+    # Run on pushes and MRs to any branch
+    - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"'
 
 # === Branch Name Validation ===
 branch_name_lint:
   image: alpine:latest
   stage: validate
   script:
-    - echo "Branch name: $CI_COMMIT_REF_NAME"
-    - echo "$CI_COMMIT_REF_NAME" | grep -Eq '^(feature|fix|hotfix|chore|refactor|docs|test|perf|build|ci|release)/[0-9]{1,6}-[a-z0-9._-]+$'
-  only:
-    - merge_requests
-    - branches
+    - |
+      echo "Branch: $CI_COMMIT_REF_NAME"
+      echo "$CI_COMMIT_REF_NAME" | grep -Eq '^(feature|fix|hotfix|chore|refactor|docs|test|perf|build|ci|release)/[0-9]{1,6}-[a-z0-9._-]+$'
+  rules:
+    # Don't run this job on mainline/prod branches
+    - if: '$CI_COMMIT_BRANCH =~ /^(master|main|production\/.*)$/'
+      when: never
+    # Run on pushes and MRs for all other branches
+    - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: on_success
 
 # === Secret Detection (GitLab built-in) ===
 include:
