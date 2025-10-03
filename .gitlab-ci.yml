@@ -18,7 +18,7 @@ commit_message_lint:
       apk add --no-cache git grep
       MSG="$(git log -1 --pretty=%B)"
       echo "Last commit message: $MSG"
-      echo "$MSG" | grep -Eq '^(feat|fix|chore|docs|refactor|test|perf|build|ci|revert)(\([a-z0-9._-]+\))?: .{10,}$'
+      echo "$MSG" | grep -Eq '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(\w+\))?(!)?:\s.*'
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"'
 
