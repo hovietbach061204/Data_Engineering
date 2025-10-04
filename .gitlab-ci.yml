@@ -10,17 +10,17 @@ lint_code:
     - pip install flake8
     - flake8 .
 
-# commit_message_lint:
-#   image: alpine:latest
-#   stage: validate
-#   script:
-#     - |
-#       apk add --no-cache git grep
-#       MSG="$(git log -1 --pretty=%B)"
-#       echo "Last commit message: $MSG"
-#       echo "$MSG" | grep -Eq '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(\w+\))?(!)?:\s.*'
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"'
+commit_message_lint:
+  image: alpine:latest
+  stage: validate
+  script:
+    - |
+      apk add --no-cache git grep
+      MSG="$(git log -1 --pretty=%B)"
+      echo "Last commit message: $MSG"
+      echo "$MSG" | head -n1 | grep -Eq '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9._-]+\))?(!)?:\s.{10,}$'
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"'
 
 branch_name_lint:
   image: alpine:latest
