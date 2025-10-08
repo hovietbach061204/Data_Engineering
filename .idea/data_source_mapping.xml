@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$USER_HOME$/Downloads/DimStore.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/Create3Dim/DimShipMethod.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/Create3Dim/DimStore.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/Create3Dim/DimTerritory.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCreateTable.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCustomer.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimStore.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/console.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+  </component>
+</project>

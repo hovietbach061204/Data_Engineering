@@ -1,0 +1,231 @@
+1. I have already run the mssql on another external container so I don't need to add
+sqlserver:
+  image: mcr.microsoft.com/mssql/server:2022-latest
+  container_name: sqlserver
+  environment:
+    ACCEPT_EULA: "Y"
+    MSSQL_SA_PASSWORD: "StrongP@ssw0rd!"
+    MSSQL_PID: "Developer"
+  ports:
+    - "1433:1433"
+  healthcheck:
+    test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P StrongP@ssw0rd! -Q 'SELECT 1' || exit 1"]
+    interval: 20s
+    timeout: 5s
+    retries: 10
+  restart: always
+
+in the docker-compose.yml anymore right?
+
+2. Here is the x-airflow-common:
+x-airflow-common:
+  &airflow-common
+  # In order to add custom dependencies or upgrade provider distributions you can use your extended image.
+  # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
+  # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.1.0}
+  # build: .
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
+    # yamllint disable rule:line-length
+    # Use simple http server on scheduler for health checks
+    # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
+    # yamllint enable rule:line-length
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
+    # for other purpose (development, test and especially production usage) build/extend Airflow image.
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    # The following line can be used to set a custom config file, stored in the local config folder
+    AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+  volumes:
+    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
+    - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
+    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    &airflow-common-depends-on
+    redis:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
+
+apply your suggested update into this.
+
+3. So the connection between external database mssql and postgres which is run in the docker compose are the defined in the .yaml file or in the dwh_pipeline? If you need connection with my mssql, the user is: sa and the password is: VietBach061204##
+
+4. For example in the mssql (data source), there is a table CompanyX.Sales.Store, after I ran this sql script to build the dimStore:
+
+USE [CompanyX];
+GO
+SET NOCOUNT ON;
+
+-- Ensure target schema
+IF SCHEMA_ID(N'silver') IS NULL EXEC(N'CREATE SCHEMA silver');
+GO
+
+-- 1) Drop and rebuild staging table for demographics
+IF OBJECT_ID('dbo.ExtractedStoreDemographic','U') IS NOT NULL
+    DROP TABLE dbo.ExtractedStoreDemographic;
+GO
+
+CREATE TABLE dbo.ExtractedStoreDemographic
+(
+    BusinessEntityID  INT           NOT NULL,
+    AnnualSales       DECIMAL(18,2) NULL,
+    AnnualRevenue     DECIMAL(18,2) NULL,
+    BankName          NVARCHAR(100) NULL,
+    BusinessType      NVARCHAR(30)  NULL,
+    YearOpened        INT           NULL,
+    Specialty         NVARCHAR(100) NULL,
+    SquareFeet        INT           NULL,
+    Brands            INT           NULL,
+    Internet          NVARCHAR(30)  NULL,
+    NumberEmployees   INT           NULL
+);
+GO
+
+;WITH StoreXML AS
+(
+    SELECT
+        s.BusinessEntityID,
+        s.[Name],
+        s.Demographics AS DemXML
+    FROM CompanyX.Sales.Store AS s
+    WHERE s.Demographics IS NOT NULL
+)
+INSERT INTO dbo.ExtractedStoreDemographic
+(
+    BusinessEntityID, AnnualSales, AnnualRevenue, BankName, BusinessType,
+    YearOpened, Specialty, SquareFeet, Brands, Internet, NumberEmployees
+)
+SELECT
+    sx.BusinessEntityID,
+    TRY_CONVERT(DECIMAL(18,2), sx.DemXML.value('declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey"; (/StoreSurvey/AnnualSales)[1]', 'float')),
+    TRY_CONVERT(DECIMAL(18,2), sx.DemXML.value('declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey"; (/StoreSurvey/AnnualRevenue)[1]', 'float')),
+    sx.DemXML.value('declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey"; (/StoreSurvey/BankName)[1]', 'nvarchar(100)'),
+    sx.DemXML.value('declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey"; (/StoreSurvey/BusinessType)[1]', 'nvarchar(30)'),
+    TRY_CONVERT(INT, sx.DemXML.value('declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey"; (/StoreSurvey/YearOpened)[1]', 'nvarchar(100)')),
+    sx.DemXML.value('declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey"; (/StoreSurvey/Specialty)[1]', 'nvarchar(100)'),
+    TRY_CONVERT(INT, sx.DemXML.value('declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey"; (/StoreSurvey/SquareFeet)[1]', 'nvarchar(100)')),
+    TRY_CONVERT(INT, sx.DemXML.value('declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey"; (/StoreSurvey/Brands)[1]', 'nvarchar(100)')),
+    sx.DemXML.value('declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey"; (/StoreSurvey/Internet)[1]', 'nvarchar(30)'),
+    TRY_CONVERT(INT, sx.DemXML.value('declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey"; (/StoreSurvey/NumberEmployees)[1]', 'nvarchar(100)'))
+FROM StoreXML sx;
+GO
+
+-- 2) Resolve store addresses into staging (preserve original values)
+IF OBJECT_ID('dbo.StoreAddress','U') IS NOT NULL DROP TABLE dbo.StoreAddress;
+GO
+
+SELECT
+    s.BusinessEntityID,
+    s.[Name],
+    atp.[Name] AS AddressType,
+    a.AddressLine1,
+    a.AddressLine2,
+    a.City,
+    sp.[Name] AS StateProvinceName,
+    a.PostalCode,
+    cr.[Name] AS CountryRegionName
+INTO dbo.StoreAddress
+FROM CompanyX.Sales.Store AS s
+INNER JOIN CompanyX.Person.BusinessEntityAddress AS bea
+    ON bea.BusinessEntityID = s.BusinessEntityID
+INNER JOIN CompanyX.Person.Address AS a
+    ON a.AddressID = bea.AddressID
+INNER JOIN CompanyX.Person.StateProvince AS sp
+    ON sp.StateProvinceID = a.StateProvinceID
+INNER JOIN CompanyX.Person.CountryRegion AS cr
+    ON cr.CountryRegionCode = sp.CountryRegionCode
+INNER JOIN CompanyX.Person.AddressType AS atp
+    ON atp.AddressTypeID = bea.AddressTypeID;
+GO
+
+-- 3) Drop and recreate DimStore
+IF OBJECT_ID('silver.DimStore','U') IS NOT NULL
+    DROP TABLE silver.DimStore;
+GO
+
+CREATE TABLE silver.DimStore
+(
+    Store_key           INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [Name]              NVARCHAR(100)      NULL,
+    AnnualSales         DECIMAL(18,2)      NULL,
+    AnnualRevenue       DECIMAL(18,2)      NULL,
+    BusinessType        NVARCHAR(30)       NULL,
+    BankName            NVARCHAR(100)      NULL,
+    YearOpened          INT                NULL,
+    Specialty           NVARCHAR(100)      NULL,
+    SquareFeet          INT                NULL,
+    Brands              INT                NULL,
+    Internet            NVARCHAR(30)       NULL,
+    NumberEmployees     INT                NULL,
+    AddressType         NVARCHAR(50)       NULL,
+    AddressLine1        NVARCHAR(60)       NULL,
+    AddressLine2        NVARCHAR(60)       NULL,
+    City                NVARCHAR(30)       NULL,
+    StateProvinceName   NVARCHAR(50)       NULL,
+    CountryRegionName   NVARCHAR(50)       NULL
+);
+GO
+
+-- 4) Load DimStore preserving all address rows (no trimming, no dedupe)
+INSERT INTO silver.DimStore
+(
+    [Name],
+    AnnualSales,
+    AnnualRevenue,
+    BusinessType,
+    BankName,
+    YearOpened,
+    Specialty,
+    SquareFeet,
+    Brands,
+    Internet,
+    NumberEmployees,
+    AddressType,
+    AddressLine1,
+    AddressLine2,
+    City,
+    StateProvinceName,
+    CountryRegionName
+)
+SELECT
+    s.[Name],
+    ed.AnnualSales,
+    ed.AnnualRevenue,
+    ed.BusinessType,
+    ed.BankName,
+    ed.YearOpened,
+    ed.Specialty,
+    ed.SquareFeet,
+    ed.Brands,
+    ed.Internet,
+    ed.NumberEmployees,
+    sa.AddressType,
+    sa.AddressLine1,
+    sa.AddressLine2,
+    sa.City,
+    sa.StateProvinceName,
+    sa.CountryRegionName
+FROM CompanyX.Sales.Store AS s
+LEFT JOIN dbo.ExtractedStoreDemographic AS ed
+    ON ed.BusinessEntityID = s.BusinessEntityID
+LEFT JOIN dbo.StoreAddress AS sa
+    ON sa.BusinessEntityID = s.BusinessEntityID;
+GO
+
+
+I would load it into the staging schema in postgres will do later transformation with pyspark or pandas, numpy and then load final result to, let say, DWH schema in Postgres.
+
+5. After loading, what if I want to use libraries for ml such as scikitlearn, pandas, numpy, etc. (although I know pyspark does support ml methods), do I need to define that in the .yml and rebuild again the docker-compose? Or I just run

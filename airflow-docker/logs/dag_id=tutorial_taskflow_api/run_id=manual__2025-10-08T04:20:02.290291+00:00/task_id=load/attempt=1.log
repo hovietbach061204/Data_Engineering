@@ -1,0 +1,11 @@
+{"timestamp":"2025-10-08T04:20:09.122793","level":"info","event":"DAG bundles loaded: dags-folder, example_dags","logger":"airflow.dag_processing.bundles.manager.DagBundlesManager"}
+{"timestamp":"2025-10-08T04:20:09.124142","level":"info","event":"Filling up the DagBag from /home/airflow/.local/lib/python3.12/site-packages/airflow/example_dags/tutorial_taskflow_api.py","logger":"airflow.models.dagbag.DagBag"}
+{"timestamp":"2025-10-08T04:20:09.235929Z","level":"info","event":"Task instance is in running state","chan":"stdout","logger":"task"}
+{"timestamp":"2025-10-08T04:20:09.236169Z","level":"info","event":" Previous state of the Task instance: queued","chan":"stdout","logger":"task"}
+{"timestamp":"2025-10-08T04:20:09.236322Z","level":"info","event":"Current task name:load","chan":"stdout","logger":"task"}
+{"timestamp":"2025-10-08T04:20:09.236419Z","level":"info","event":"Dag name:tutorial_taskflow_api","chan":"stdout","logger":"task"}
+{"timestamp":"2025-10-08T04:20:09.236507Z","level":"info","event":"Total order value is: 1236.70","chan":"stdout","logger":"task"}
+{"timestamp":"2025-10-08T04:20:09.236590Z","level":"info","event":"Task instance in success state","chan":"stdout","logger":"task"}
+{"timestamp":"2025-10-08T04:20:09.236672Z","level":"info","event":" Previous state of the Task instance: running","chan":"stdout","logger":"task"}
+{"timestamp":"2025-10-08T04:20:09.236757Z","level":"info","event":"Task operator:<Task(_PythonDecoratedOperator): load>","chan":"stdout","logger":"task"}
+{"timestamp":"2025-10-08T04:20:09.178739","level":"info","event":"Done. Returned value was: None","logger":"airflow.task.operators.airflow.providers.standard.decorators.python._PythonDecoratedOperator"}
