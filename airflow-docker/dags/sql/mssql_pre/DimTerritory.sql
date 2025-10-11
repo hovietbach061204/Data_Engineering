@@ -90,15 +90,15 @@ SELECT
     ) AS ModifiedDate
 FROM #TerritoryStage AS s;
 
----------------------------------checking
--- Row count
-SELECT COUNT(*) AS TerritoryRows FROM dbo.DimTerritory;
-
--- Spot check
-SELECT TOP (20) * FROM dbo.DimTerritory ORDER BY Territory_key;
-
--- Ensure 1 row per TerritoryID
-SELECT TerritoryID, COUNT(*) AS Cnt
-FROM dbo.DimTerritory
-GROUP BY TerritoryID
-HAVING COUNT(*) > 1;
+-- ---------------------------------checking
+-- -- Row count
+-- SELECT COUNT(*) AS TerritoryRows FROM dbo.DimTerritory;
+--
+-- -- Spot check
+-- SELECT TOP (20) * FROM dbo.DimTerritory ORDER BY Territory_key;
+--
+-- -- Ensure 1 row per TerritoryID
+-- SELECT TerritoryID, COUNT(*) AS Cnt
+-- FROM dbo.DimTerritory
+-- GROUP BY TerritoryID
+-- HAVING COUNT(*) > 1;

@@ -36,35 +36,32 @@ IF @sql IS NOT NULL AND LEN(@sql) > 0
     EXEC sys.sp_executesql @sql;
 
 
-CREATE TABLE DimCustomer (
+CREATE TABLE CompanyX.dbo.DimCustomer (
     CustomerKey INT IDENTITY(1,1) PRIMARY KEY,
     CustomerID INT NOT NULL,
     PersonType nchar(2),
     FirstName NVARCHAR(100),
     LastName NVARCHAR(100),
-    EmailAddress nvarchar(50),
-    AddressLine1 nvarchar(60),
+    EmailAddress NVARCHAR(50),
+    AddressLine1 NVARCHAR(60),
     EmailPromotion tinyint,
-    City nvarchar(30),
-    ProvinceName nvarchar(50),
-    CountryRegionName nvarchar(50),
+    City NVARCHAR(30),
+    StateProvinceName NVARCHAR(50),
+    CountryRegionName NVARCHAR(50),
     BirthDate datetime,
-    CommuteDistance nvarchar(50),
-    DateFirstPurchase datetime,
-    Education nvarchar(30),
-    Gender nvarchar(2),
+    MaritalStatus NVARCHAR(2),
+    Gender NVARCHAR(2),
+    Education NVARCHAR(30),
+    Occupation NVARCHAR(30),
     HomeOwnerFlag BIT,
-    MaritalStatus nvarchar(2),
-    NumberCarsOwned int,
-    NumberChildrenAtHome int,
-    Occupation nvarchar(30),
-    TotalChildren int,
-    TotalPurchaseYTD float,
-    YearlyIncome nvarchar(40),
-    ModifiedDate datetime
+    NumberCarsOwned INT,
+    NumberChildrenAtHome INT,
+    TotalChildren INT,
+    TotalPurchaseYTD money,
+    YearlyIncome NVARCHAR(40),
+    DateFirstPurchase datetime,
+    ModifiedDate datetime DEFAULT GETDATE()
 );
-
-
 
 CREATE TABLE DimSalesReason (
     ReasonKey INT IDENTITY(1,1) PRIMARY KEY,

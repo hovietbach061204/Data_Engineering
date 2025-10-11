@@ -53,8 +53,8 @@ SELECT
     ModifiedDate
 FROM #ShipMethodStage;
 
-SELECT TOP (20) *
-FROM dbo.DimShipMethod
-ORDER BY ShipMethod_key;
-
-SELECT COUNT(*) AS TotalShipMethods FROM dbo.DimShipMethod;
+-- SELECT TOP (20) *
+-- FROM dbo.DimShipMethod
+-- ORDER BY ShipMethod_key;
+--
+-- SELECT COUNT(*) AS TotalShipMethods FROM dbo.DimShipMethod;
