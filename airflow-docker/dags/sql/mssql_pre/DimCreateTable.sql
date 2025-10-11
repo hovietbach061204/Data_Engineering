@@ -1,6 +1,6 @@
 -- T-SQL
 USE CompanyX;
-GO
+
 SET NOCOUNT ON;
 
 -- 1) Drop FKs that are on or reference dbo tables
@@ -35,7 +35,7 @@ WHERE s.name = 'dbo';
 IF @sql IS NOT NULL AND LEN(@sql) > 0
     EXEC sys.sp_executesql @sql;
 
-GO
+
 CREATE TABLE DimCustomer (
     CustomerKey INT IDENTITY(1,1) PRIMARY KEY,
     CustomerID INT NOT NULL,
@@ -65,7 +65,7 @@ CREATE TABLE DimCustomer (
 );
 
 
-GO
+
 CREATE TABLE DimSalesReason (
     ReasonKey INT IDENTITY(1,1) PRIMARY KEY,
     SalesOrderID int not null,
@@ -76,7 +76,7 @@ CREATE TABLE DimSalesReason (
 );
 
 
-GO
+
 CREATE TABLE DimPromotion(
     PromotionKey INT IDENTITY(1,1) PRIMARY KEY,
     SpecialOfferID INT NOT NULL,
@@ -92,7 +92,7 @@ CREATE TABLE DimPromotion(
 );
 
 
-GO
+
 CREATE TABLE DimProduct(
     ProductKey INT IDENTITY(1,1) PRIMARY KEY,
     ProductID INT NOT NULL,
@@ -111,7 +111,7 @@ CREATE TABLE DimProduct(
     ModifiedDate datetime 
 )
 
-GO
+
 CREATE TABLE DimTerritory
 (
     Territory_key     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,  -- surrogate key
@@ -130,7 +130,7 @@ CREATE TABLE DimTerritory
 CREATE UNIQUE INDEX UX_Dim_Territory_TerritoryID ON DimTerritory(TerritoryID);
 
 /* Checked below */
-GO
+
 CREATE TABLE DimShipMethod
 (
     ShipMethod_key   INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
@@ -143,7 +143,7 @@ CREATE TABLE DimShipMethod
 -- Optional: enforce uniqueness on natural key
 CREATE UNIQUE INDEX UX_Dim_ShipMethod_ShipMethodID ON DimShipMethod(ShipMethodID);
 
-GO
+
 CREATE TABLE DimStore
 (
     Store_key           INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
@@ -168,7 +168,7 @@ CREATE TABLE DimStore
     ModifiedDate        datetime           NULL
 );
 
-GO
+
 CREATE TABLE FactSale (
     FactSaleKey INT IDENTITY(1,1) PRIMARY KEY,
     DateKey             int,
