@@ -41,7 +41,7 @@ WITH XMLNAMESPACES (
     ''http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey'' AS ns
 )
 , Shredded AS (
-    SELECT 
+    SELECT
         P.BusinessEntityID,
         x.value(''local-name(.)'', ''nvarchar(100)'') AS ElementName,
         x.value(''.'', ''nvarchar(200)'') AS ElementValue
@@ -62,6 +62,12 @@ PIVOT (
 -- Execute dynamic SQL
 EXEC sp_executesql @sql;
 
+-- Idempotent target
+IF OBJECT_ID('dbo.DimCustomer','U') IS NULL
+    RAISERROR('dbo.DimCustomer does not exist – run DimCreateTable.sql first', 16, 1);
+
+TRUNCATE TABLE dbo.DimCustomer;
+
 -- Now query your table
 SELECT * FROM ExtractedDemographic;
 
@@ -74,7 +80,7 @@ WITH SalesAndAdress AS (
 /* join with customer fom sales header*/
 customerSalesHeader AS (
 	select C.CustomerID,C.PersonID,TerritoryID,S.AddressID,C.ModifiedDate
-	from SalesAndAdress S JOIN CompanyX.Sales.Customer C ON (S.CustomerID = C.CustomerID) 
+	from SalesAndAdress S JOIN CompanyX.Sales.Customer C ON (S.CustomerID = C.CustomerID)
 	where C.PersonID IS NOT NULL
 ),
 /*join person and personDemographic and CustomerSalesHeader*/
@@ -84,7 +90,7 @@ CustomerPersonSalesHeader AS (
 ),
 /*join stateprovince id with CountryRegion and with Address*/
 StateAndRegion AS (
-    select distinct A.AddressID,A.AddressLine1,A.City,P.Name as ProvinceName, R.Name as CountryRegionName 
+    select distinct A.AddressID,A.AddressLine1,A.City,P.Name as ProvinceName, R.Name as CountryRegionName
     from (CompanyX.Person.StateProvince P JOIN CompanyX.Person.CountryRegion R ON (P.CountryRegionCode = R.CountryRegionCode)) JOIN CompanyX.Person.Address A ON (A.StateProvinceID = P.StateProvinceID)
 ),
 /* join stateName, addressline, city and CountryName with CustomerPersonSalesHeader with email address */
