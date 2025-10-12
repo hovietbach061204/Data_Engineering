@@ -145,6 +145,3 @@ FROM OneAddressPerStore AS oa
 LEFT JOIN StoreWithDemographics AS d
     ON d.BusinessEntityID = oa.BusinessEntityID
 WHERE oa.rn = 1;
-
--- (Optional) ensure natural-key uniqueness
--- CREATE UNIQUE INDEX UX_DimStore_StoreID ON CompanyX.dbo.DimStore(StoreID);

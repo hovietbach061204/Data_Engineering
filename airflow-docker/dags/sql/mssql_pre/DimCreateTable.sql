@@ -166,7 +166,7 @@ CREATE TABLE DimStore
 );
 
 
-CREATE TABLE FactSale (
+CREATE TABLE FactSales (
     FactSaleKey INT IDENTITY(1,1) PRIMARY KEY,
     DateKey             int,
     ProductKey      int       NOT NULL,
