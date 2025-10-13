@@ -165,6 +165,21 @@ CREATE TABLE DimStore
     ModifiedDate        datetime           NULL
 );
 
+CREATE TABLE DimDate
+(
+    [DateKey] INT PRIMARY KEY,
+    [FullDate] DATE NOT NULL,
+    [DayOfWeek] NVARCHAR(10) NOT NULL,
+    [DayName] NVARCHAR(10) NOT NULL,
+    [DayOfMonth] NVARCHAR(10) NOT NULL,
+    [Month] NVARCHAR(10) NOT NULL,
+    [MonthName] NVARCHAR(10) NOT NULL,
+    [Quarter] INT NOT NULL,
+    [Season] NVARCHAR(10) NOT NULL,
+    [Year] INT NOT NULL,
+    [IsWeekend] BIT NOT NULL,
+    [IsHoliday] BIT NOT NULL
+);
 
 CREATE TABLE FactSales (
     FactSaleKey INT IDENTITY(1,1) PRIMARY KEY,
