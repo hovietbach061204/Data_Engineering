@@ -1,4 +1,11 @@
-Use CompanyX;
+USE CompanyX;
+SET NOCOUNT ON;
+
+IF OBJECT_ID('dbo.FactSales','U') IS NULL
+    RAISERROR('dbo.FactSales does not exist – run DimCreateTable.sql first', 16, 1);
+
+TRUNCATE TABLE dbo.FactSales;
+
 With baseTable as 
 (select H.SalesOrderID,SalesOrderDetailID,H.SalesOrderID+SalesOrderDetailID as DateID,UnitPrice,UnitPriceDiscount,UnitPriceDiscount*OrderQty as ExtendedDiscount, P.StandardCost, P.StandardCost * OrderQty as ExtendedCost,LineTotal,H.OrderDate,H.DueDate,H.ShipDate,H.ModifiedDate
 from (CompanyX.Sales.SalesOrderDetail D JOIN CompanyX.Sales.SalesOrderHeader H ON (D.SalesOrderID = H.SalesOrderID)) JOIN CompanyX.Production.Product P ON (D.ProductID = P.ProductID)),
@@ -46,7 +53,7 @@ Key6 as (
 	select distinct Key5.*,S.Store_key
 	from Key5 join StoreAdder S on (Key5.SalesOrderID = S.SalesOrderID)
 )
-insert into CompanyX.dbo.FactSale (
+insert into CompanyX.dbo.FactSales (
 	SalesOrderID,SalesOrderDetail,ProductKey,PromotionKey,CustomerKey,TerritoryKey,StoreKey,SaleReasonKey,
 	OrderQty,UnitPrice,UnitPriceDiscount,OrderDate,DueDate,ShipDate,
 	Status,OnlineOrderFlag,TaxAllocated,Freight_Allocated,TotalDueTime,LineAmountSource,
@@ -66,10 +73,10 @@ from CompanyX.Sales.SalesOrderHeader H join CompanyX.Sales.SalesOrderDetail D on
 									   join Key6 on (H.SalesOrderID = Key6.SalesOrderID and D.SalesOrderDetailID = Key6.SalesOrderDetailID )
 
 go
-UPDATE CompanyX.dbo.FactSale
+UPDATE CompanyX.dbo.FactSales
 SET LineAmount_Gross = UnitPrice * OrderQty,
     LineDiscountAmount = UnitPrice * UnitPriceDiscount * OrderQty,
     LineAmount_Net = UnitPrice * (1-UnitPriceDiscount) * OrderQty;
 
-UPDATE CompanyX.dbo.FactSale
+UPDATE CompanyX.dbo.FactSales
 Set TotalDue_Line = LineAmount_Net + TaxAllocated + Freight_Allocated
