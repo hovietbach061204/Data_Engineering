@@ -1,9 +1,4 @@
 Use CompanyX;
-/* =======================================================================
-   STEP 1) Stage ShipMethod data
-   ======================================================================= */
-
-IF OBJECT_ID('tempdb..#ShipMethodStage') IS NOT NULL DROP TABLE #ShipMethodStage;
 
 ;WITH ShipBaseData AS
 (

@@ -1,23 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
-    <file url="file://$USER_HOME$/Downloads/DimStore.sql" dialect="TSQL" />
-    <file url="file://$PROJECT_DIR$/Create3Dim/DimShipMethod.sql" dialect="TSQL" />
-    <file url="file://$PROJECT_DIR$/Create3Dim/DimStore.sql" dialect="TSQL" />
-    <file url="file://$PROJECT_DIR$/Create3Dim/DimTerritory.sql" dialect="TSQL" />
-    <file url="file://$PROJECT_DIR$/DimFactScript/DimCustomer.sql" dialect="GenericSQL" />
-    <file url="file://$PROJECT_DIR$/DimFactScript/DimShipMethod.sql" dialect="TSQL" />
-    <file url="file://$PROJECT_DIR$/DimFactScript/DimStore.sql" dialect="TSQL" />
-    <file url="file://$PROJECT_DIR$/DimFactScript/DimTerritory.sql" dialect="TSQL" />
+    <file url="file://$USER_HOME$/Downloads/DimCreateTable (1).sql" dialect="TSQL" />
+    <file url="file://$USER_HOME$/Downloads/ETLDimDate.sql" dialect="TSQL" />
+    <file url="file://$USER_HOME$/Downloads/FactSales (1).sql" dialect="TSQL" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCreateTable.sql" dialect="TSQL" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCustomer.sql" dialect="TSQL" />
-    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimProduct.sql" dialect="GenericSQL" />
-    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimPromotion.sql" dialect="GenericSQL" />
-    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimSaleReason.sql" dialect="GenericSQL" />
-    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimShipMethod.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimDate.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimProduct.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimPromotion.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimSalesReason.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimShipMethod.sql" dialect="TSQL" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimStore.sql" dialect="TSQL" />
-    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimTerritory.sql" dialect="GenericSQL" />
-    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/FactSales.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimTerritory.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/FactSales.sql" dialect="TSQL" />
     <file url="file://$PROJECT_DIR$/console.sql" dialect="TSQL" />
   </component>
 </project>

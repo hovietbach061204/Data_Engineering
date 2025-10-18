@@ -1,10 +1,6 @@
 USE CompanyX;
 SET NOCOUNT ON;
 
-
-TRUNCATE TABLE CompanyX.dbo.DimCustomer;
-
-
 WITH vIndividualCustomer AS (
     SELECT
         p.BusinessEntityID,
@@ -18,22 +14,23 @@ WITH vIndividualCustomer AS (
         a.City,
         sp.Name AS StateProvinceName,
         cr.Name AS CountryRegionName,
-        p.Demographics
+        p.Demographics,
+        c.ModifiedDate AS CustomerModifiedDate   -- <-- carry ModifiedDate from Sales.Customer
     FROM Person.Person p
-        INNER JOIN Sales.Customer c
-            ON c.PersonID = p.BusinessEntityID
-        INNER JOIN Person.BusinessEntityAddress bea
-            ON bea.BusinessEntityID = p.BusinessEntityID
-        INNER JOIN Person.Address a
-            ON a.AddressID = bea.AddressID
-        INNER JOIN Person.StateProvince sp
-            ON sp.StateProvinceID = a.StateProvinceID
-        INNER JOIN Person.CountryRegion cr
-            ON cr.CountryRegionCode = sp.CountryRegionCode
-        INNER JOIN Person.AddressType atp
-            ON atp.AddressTypeID = bea.AddressTypeID
-        LEFT JOIN Person.EmailAddress ea
-            ON ea.BusinessEntityID = p.BusinessEntityID
+    INNER JOIN Sales.Customer c
+        ON c.PersonID = p.BusinessEntityID
+    INNER JOIN Person.BusinessEntityAddress bea
+        ON bea.BusinessEntityID = p.BusinessEntityID
+    INNER JOIN Person.Address a
+        ON a.AddressID = bea.AddressID
+    INNER JOIN Person.StateProvince sp
+        ON sp.StateProvinceID = a.StateProvinceID
+    INNER JOIN Person.CountryRegion cr
+        ON cr.CountryRegionCode = sp.CountryRegionCode
+    INNER JOIN Person.AddressType atp
+        ON atp.AddressTypeID = bea.AddressTypeID
+    LEFT JOIN Person.EmailAddress ea
+        ON ea.BusinessEntityID = p.BusinessEntityID
     WHERE c.StoreID IS NULL
 ),
 vPersonDemographics AS (
@@ -64,7 +61,7 @@ vPersonDemographics AS (
         [ref].value(N'declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey";
             NumberCarsOwned[1]', 'int') AS NumberCarsOwned
     FROM Person.Person p
-        CROSS APPLY p.Demographics.nodes(N'declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey"; /IndividualSurvey') AS [IndividualSurvey](ref)
+    CROSS APPLY p.Demographics.nodes(N'declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey"; /IndividualSurvey') AS [IndividualSurvey](ref)
     WHERE p.Demographics IS NOT NULL
 )
 
@@ -98,7 +95,7 @@ SELECT
     pd.TotalPurchaseYTD,
     pd.YearlyIncome,
     pd.DateFirstPurchase,
-    GETDATE() AS ModifiedDate
+    ic.CustomerModifiedDate   -- <-- use original ModifiedDate from Sales.Customer
 FROM vIndividualCustomer AS ic
 LEFT JOIN vPersonDemographics AS pd
     ON ic.BusinessEntityID = pd.BusinessEntityID;

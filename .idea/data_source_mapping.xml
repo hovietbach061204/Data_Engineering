@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourcePerFileMappings">
-    <file url="file://$USER_HOME$/Downloads/DimStore.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
-    <file url="file://$PROJECT_DIR$/Create3Dim/DimShipMethod.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
-    <file url="file://$PROJECT_DIR$/Create3Dim/DimStore.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
-    <file url="file://$PROJECT_DIR$/Create3Dim/DimTerritory.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$USER_HOME$/Downloads/DimCreateTable (1).sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$USER_HOME$/Downloads/ETLDimDate.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$USER_HOME$/Downloads/FactSales (1).sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCreateTable.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCustomer.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimDate.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimProduct.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimPromotion.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimSalesReason.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimShipMethod.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimStore.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
-    <file url="file://$PROJECT_DIR$/console.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimTerritory.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/FactSales.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
   </component>
 </project>

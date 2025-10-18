@@ -1,9 +1,6 @@
 ﻿USE CompanyX;
 SET NOCOUNT ON;
 
--- Idempotent reload
-TRUNCATE TABLE CompanyX.dbo.DimStore;
-
 ;WITH StoreWithAddresses AS (
     SELECT
         s.BusinessEntityID,

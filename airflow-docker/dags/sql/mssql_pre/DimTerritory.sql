@@ -1,9 +1,4 @@
 Use CompanyX;
-/* =======================================================================
-   STEP 1) Stage SalesTerritory with CountryRegionName (1 row per TerritoryID)
-   ======================================================================= */
-
-IF OBJECT_ID('tempdb..#TerritoryStage') IS NOT NULL DROP TABLE #TerritoryStage;
 
 ;WITH TerrLatest AS
 (
@@ -89,16 +84,3 @@ SELECT
              ) AS valueTable(v)
     ) AS ModifiedDate
 FROM #TerritoryStage AS s;
-
--- ---------------------------------checking
--- -- Row count
--- SELECT COUNT(*) AS TerritoryRows FROM dbo.DimTerritory;
---
--- -- Spot check
--- SELECT TOP (20) * FROM dbo.DimTerritory ORDER BY Territory_key;
---
--- -- Ensure 1 row per TerritoryID
--- SELECT TerritoryID, COUNT(*) AS Cnt
--- FROM dbo.DimTerritory
--- GROUP BY TerritoryID
--- HAVING COUNT(*) > 1;
