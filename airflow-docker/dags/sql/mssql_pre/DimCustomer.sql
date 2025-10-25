@@ -8,29 +8,63 @@ WITH vIndividualCustomer AS (
         p.PersonType,
         p.FirstName,
         p.LastName,
-        ea.EmailAddress,
+
+        -- one, latest email for this person
+        email.EmailAddress,
         p.EmailPromotion,
-        a.AddressLine1,
-        a.City,
-        sp.Name AS StateProvinceName,
-        cr.Name AS CountryRegionName,
+
+        -- one, latest address for this person (+ its region/country)
+        addr.AddressLine1,
+        addr.City,
+        addr.StateProvinceName,
+        addr.CountryRegionName,
+
         p.Demographics,
-        c.ModifiedDate AS CustomerModifiedDate   -- <-- carry ModifiedDate from Sales.Customer
+
+        -- Collect all ModifiedDate columns to compute StartDate
+        c.ModifiedDate              AS CustomerModifiedDate,
+        p.ModifiedDate              AS PersonModifiedDate,
+        email.EmailModifiedDate     AS EmailModifiedDate,
+        addr.AddressModifiedDate    AS AddressModifiedDate,
+        addr.StateProvModifiedDate  AS StateProvinceModifiedDate,
+        addr.CountryRegionModDate   AS CountryRegionModifiedDate
     FROM Person.Person p
     INNER JOIN Sales.Customer c
         ON c.PersonID = p.BusinessEntityID
-    INNER JOIN Person.BusinessEntityAddress bea
-        ON bea.BusinessEntityID = p.BusinessEntityID
-    INNER JOIN Person.Address a
-        ON a.AddressID = bea.AddressID
-    INNER JOIN Person.StateProvince sp
-        ON sp.StateProvinceID = a.StateProvinceID
-    INNER JOIN Person.CountryRegion cr
-        ON cr.CountryRegionCode = sp.CountryRegionCode
-    INNER JOIN Person.AddressType atp
-        ON atp.AddressTypeID = bea.AddressTypeID
-    LEFT JOIN Person.EmailAddress ea
-        ON ea.BusinessEntityID = p.BusinessEntityID
+
+    -- === pick the latest email (if any) ===
+    OUTER APPLY (
+        SELECT TOP (1)
+               ea.EmailAddress,
+               ea.ModifiedDate AS EmailModifiedDate
+        FROM Person.EmailAddress ea
+        WHERE ea.BusinessEntityID = p.BusinessEntityID
+        ORDER BY ea.ModifiedDate DESC, ea.EmailAddress
+    ) AS email
+
+    -- === pick the latest address (if any), bringing region & country ===
+    OUTER APPLY (
+        SELECT TOP (1)
+               a.AddressLine1,
+               a.City,
+               sp.Name  AS StateProvinceName,
+               cr.Name  AS CountryRegionName,
+               a.ModifiedDate  AS AddressModifiedDate,
+               sp.ModifiedDate AS StateProvModifiedDate,
+               cr.ModifiedDate AS CountryRegionModDate
+        FROM Person.BusinessEntityAddress bea
+        JOIN Person.Address a
+          ON a.AddressID = bea.AddressID
+        JOIN Person.StateProvince sp
+          ON sp.StateProvinceID = a.StateProvinceID
+        JOIN Person.CountryRegion cr
+          ON cr.CountryRegionCode = sp.CountryRegionCode
+        JOIN Person.AddressType atp
+          ON atp.AddressTypeID = bea.AddressTypeID
+        WHERE bea.BusinessEntityID = p.BusinessEntityID
+        ORDER BY a.ModifiedDate DESC, a.AddressID
+    ) AS addr
+
     WHERE c.StoreID IS NULL
 ),
 vPersonDemographics AS (
@@ -70,7 +104,8 @@ INSERT INTO CompanyX.dbo.DimCustomer (
     AddressLine1, City, StateProvinceName, CountryRegionName,
     BirthDate, MaritalStatus, Gender, Education, Occupation,
     HomeOwnerFlag, NumberCarsOwned, NumberChildrenAtHome, TotalChildren,
-    TotalPurchaseYTD, YearlyIncome, DateFirstPurchase, ModifiedDate
+    TotalPurchaseYTD, YearlyIncome, DateFirstPurchase,
+    StartDate, EndDate
 )
 SELECT
     ic.CustomerID,
@@ -95,7 +130,18 @@ SELECT
     pd.TotalPurchaseYTD,
     pd.YearlyIncome,
     pd.DateFirstPurchase,
-    ic.CustomerModifiedDate   -- <-- use original ModifiedDate from Sales.Customer
+    (
+        SELECT MAX(v)
+        FROM (VALUES
+                (ic.CustomerModifiedDate),
+                (ic.PersonModifiedDate),
+                (ic.EmailModifiedDate),
+                (ic.AddressModifiedDate),
+                (ic.StateProvinceModifiedDate),
+                (ic.CountryRegionModifiedDate)
+             ) AS valueTable(v)
+    ) AS StartDate,
+    '9999-12-31' AS EndDate
 FROM vIndividualCustomer AS ic
 LEFT JOIN vPersonDemographics AS pd
     ON ic.BusinessEntityID = pd.BusinessEntityID;

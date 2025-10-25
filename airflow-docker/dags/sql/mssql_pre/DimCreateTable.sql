@@ -36,115 +36,106 @@ IF @sql IS NOT NULL AND LEN(@sql) > 0
     EXEC sys.sp_executesql @sql;
 
 
+-- Create dimension tables
 CREATE TABLE DimCustomer (
-    CustomerKey INT IDENTITY(1,1) PRIMARY KEY,
-    CustomerID INT NOT NULL,
-    PersonType nchar(2),
-    FirstName NVARCHAR(100),
-    LastName NVARCHAR(100),
-    EmailAddress NVARCHAR(50),
-    AddressLine1 NVARCHAR(60),
-    EmailPromotion tinyint,
-    City NVARCHAR(30),
-    StateProvinceName NVARCHAR(50),
-    CountryRegionName NVARCHAR(50),
-    BirthDate datetime,
-    MaritalStatus NVARCHAR(2),
-    Gender NVARCHAR(2),
-    Education NVARCHAR(30),
-    Occupation NVARCHAR(30),
-    HomeOwnerFlag BIT,
-    NumberCarsOwned INT,
-    NumberChildrenAtHome INT,
-    TotalChildren INT,
-    TotalPurchaseYTD money,
-    YearlyIncome NVARCHAR(40),
-    DateFirstPurchase datetime,
-    ModifiedDate datetime DEFAULT GETDATE()
+    CustomerKey         INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    CustomerID          INT                NOT NULL,
+    PersonType          NVARCHAR(2)        NULL,
+    FirstName           NVARCHAR(50)       NULL,
+    LastName            NVARCHAR(50)       NULL,
+    EmailAddress        NVARCHAR(50)       NULL,
+    EmailPromotion      INT                NULL,
+    AddressLine1        NVARCHAR(60)       NULL,
+    City                NVARCHAR(30)       NULL,
+    StateProvinceName   NVARCHAR(50)       NULL,
+    CountryRegionName   NVARCHAR(50)       NULL,
+    BirthDate           DATETIME           NULL,
+    MaritalStatus       NVARCHAR(1)        NULL,
+    Gender              NVARCHAR(1)        NULL,
+    Education           NVARCHAR(40)       NULL,
+    Occupation          NVARCHAR(100)      NULL,
+    HomeOwnerFlag       BIT                NULL,
+    NumberCarsOwned     INT                NULL,
+    NumberChildrenAtHome INT               NULL,
+    TotalChildren       INT                NULL,
+    TotalPurchaseYTD    MONEY              NULL,
+    YearlyIncome        NVARCHAR(50)       NULL,
+    DateFirstPurchase   DATETIME           NULL,
+    StartDate           DATETIME           NOT NULL,
+    EndDate             DATETIME           NOT NULL DEFAULT '9999-12-31'
 );
 
 CREATE TABLE DimSalesReason (
-    ReasonKey INT IDENTITY(1,1) PRIMARY KEY,
-    SalesOrderID int not null,
-    SalesReasonID INT NOT NULL,
-    Name nvarchar(100),
-    ReasonType nvarchar(100),
-    ModifiedDate datetime
+    SalesReasonKey      INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    SalesOrderID        INT                NOT NULL,
+    SalesReasonID       INT                NOT NULL,
+    Name                NVARCHAR(50)       NULL,
+    ReasonType          NVARCHAR(50)       NULL,
+    StartDate           DATETIME           NOT NULL,
+    EndDate             DATETIME           NOT NULL DEFAULT '9999-12-31'
 );
 
-
-CREATE TABLE DimPromotion(
-    PromotionKey INT IDENTITY(1,1) PRIMARY KEY,
-    SpecialOfferID INT NOT NULL,
-    Description nvarchar(255),
-    Type nvarchar(50),
-    Category nvarchar(50),
-    DiscountPct decimal(9,4),
-    StartDate datetime,
-    EndDate datetime,
-    MinQty INT,
-    MaxQty INT,
-    ModifiedDate datetime
+CREATE TABLE DimPromotion (
+    PromotionKey        INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    SpecialOfferID      INT                NOT NULL,
+    Description         NVARCHAR(255)      NULL,
+    Type                NVARCHAR(50)       NULL,
+    Category            NVARCHAR(50)       NULL,
+    DiscountPct         SMALLMONEY         NULL,
+    StartDate           DATETIME           NOT NULL,
+    EndDate             DATETIME           NOT NULL DEFAULT '9999-12-31',
+    MinQty              INT                NULL,
+    MaxQty              INT                NULL
 );
 
-
-
-CREATE TABLE DimProduct(
-    ProductKey INT IDENTITY(1,1) PRIMARY KEY,
-    ProductID INT NOT NULL,
-    Name nvarchar(200),
-    Color nvarchar(15),
-    Size nvarchar(5),
-    Weight decimal(8,2),
-    Style nchar(2),
-    ModelName nvarchar(50),
-    CategoryName nvarchar(50),
-    SubCategoryName nvarchar (50),
-    StandardCost decimal(19,4),
-    ListPrice decimal(19,4),
-    WarrantyPeriod nvarchar(50),
-    NoOfYears nvarchar(20),
-    ModifiedDate datetime 
-)
-
-
-CREATE TABLE DimTerritory
-(
-    TerritoryKey     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,  -- surrogate key
-    [Name]            NVARCHAR(100)     NULL,
-    CountryRegionName NVARCHAR(100)     NULL,
-    [Group]           NVARCHAR(50)      NULL,
-    SalesYTD          DECIMAL(19,4)     NULL,
-    SalesLastYear     DECIMAL(19,4)     NULL,
-    CostYTD           DECIMAL(19,4)     NULL,
-    CostLastYear      DECIMAL(19,4)     NULL,
-    TerritoryID       INT               NOT NULL,
-    ModifiedDate      datetime 
+CREATE TABLE DimProduct (
+    ProductKey          INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    ProductID           INT                NOT NULL,
+    Name                NVARCHAR(50)       NULL,
+    Color               NVARCHAR(15)       NULL,
+    Size                NVARCHAR(5)        NULL,
+    Weight              DECIMAL(8,2)       NULL,
+    Style               NVARCHAR(2)        NULL,
+    ModelName           NVARCHAR(50)       NULL,
+    CategoryName        NVARCHAR(50)       NULL,
+    SubCategoryName     NVARCHAR(50)       NULL,
+    StandardCost        MONEY              NULL,
+    ListPrice           MONEY              NULL,
+    WarrantyPeriod      NVARCHAR(50)       NULL,
+    NoOfYears           NVARCHAR(50)       NULL,
+    StartDate           DATETIME           NOT NULL,
+    EndDate             DATETIME           NOT NULL DEFAULT '9999-12-31'
 );
 
--- Optional: keep one row per TerritoryID
-CREATE UNIQUE INDEX UX_Dim_Territory_TerritoryID ON DimTerritory(TerritoryID);
-
-/* Checked below */
-
-CREATE TABLE DimShipMethod
-(
-    ShipMethodKey   INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    ShipMethodID     INT              NOT NULL,
-    [Name]           NVARCHAR(50)     NULL,
-    ShipBase         DECIMAL(19,4)    NULL,
-    ShipDate         DATE             NULL,
-    ModifiedDate     datetime
+CREATE TABLE DimTerritory (
+    TerritoryKey        INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    TerritoryID         INT                NOT NULL,
+    Name                NVARCHAR(50)       NULL,
+    CountryRegionName   NVARCHAR(50)       NULL,
+    [Group]             NVARCHAR(50)       NULL,
+    SalesYTD            DECIMAL(19,4)      NULL,
+    SalesLastYear       DECIMAL(19,4)      NULL,
+    CostYTD             DECIMAL(19,4)      NULL,
+    CostLastYear        DECIMAL(19,4)      NULL,
+    StartDate           DATETIME           NOT NULL,
+    EndDate             DATETIME           NOT NULL DEFAULT '9999-12-31'
 );
--- Optional: enforce uniqueness on natural key
-CREATE UNIQUE INDEX UX_Dim_ShipMethod_ShipMethodID ON DimShipMethod(ShipMethodID);
 
+CREATE TABLE DimShipMethod (
+    ShipMethodKey       INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    ShipMethodID        INT                NOT NULL,
+    Name                NVARCHAR(50)       NULL,
+    ShipBase            MONEY              NULL,
+    ShipRate            MONEY              NULL,
+    ShipDate            DATETIME           NULL,
+    StartDate           DATETIME           NOT NULL,
+    EndDate             DATETIME           NOT NULL DEFAULT '9999-12-31'
+);
 
-CREATE TABLE DimStore
-(
-    StoreKey           INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    StoreID             int                Not null,
-    [Name]              NVARCHAR(100)      NULL,
+CREATE TABLE DimStore (
+    StoreKey            INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    StoreID             INT                NOT NULL,
+    Name                NVARCHAR(50)       NULL,
     AnnualSales         DECIMAL(18,2)      NULL,
     AnnualRevenue       DECIMAL(18,2)      NULL,
     BusinessType        NVARCHAR(30)       NULL,
@@ -161,33 +152,34 @@ CREATE TABLE DimStore
     City                NVARCHAR(30)       NULL,
     StateProvinceName   NVARCHAR(50)       NULL,
     CountryRegionName   NVARCHAR(50)       NULL,
-    ModifiedDate        datetime           NULL
+    StartDate           DATETIME           NOT NULL,
+    EndDate             DATETIME           NOT NULL DEFAULT '9999-12-31'
 );
 
 CREATE TABLE DimDate
 (
-    [DateKey] INT primary key,
+    [DateKey] INT PRIMARY KEY,
     [Date] DATETIME,
-    [FullDate] CHAR(10),-- Date in MM-dd-yyyy format
-    [DayOfMonth] VARCHAR(2), -- Field will hold day number of Month
-    [DaySuffix] VARCHAR(4), -- Apply suffix as 1st, 2nd ,3rd etc
-    [DayName] VARCHAR(9), -- Contains name of the day, Sunday, Monday
-    [DayOfWeek] CHAR(1),-- First Day Sunday=1 and Saturday=7
-    [DayOfWeekInMonth] VARCHAR(2), --1st Monday or 2nd Monday in Month
+    [FullDate] CHAR(10),
+    [DayOfMonth] VARCHAR(2),
+    [DaySuffix] VARCHAR(4),
+    [DayName] VARCHAR(9),
+    [DayOfWeek] CHAR(1),
+    [DayOfWeekInMonth] VARCHAR(2),
     [DayOfWeekInYear] VARCHAR(2),
     [DayOfQuarter] VARCHAR(3),
     [DayOfYear] VARCHAR(3),
-    [WeekOfMonth] VARCHAR(1),-- Week Number of Month
-    [WeekOfQuarter] VARCHAR(2), --Week Number of the Quarter
-    [WeekOfYear] VARCHAR(2),--Week Number of the Year
-    [Month] VARCHAR(2), --Number of the Month 1 to 12
-    [MonthName] VARCHAR(9),--January, February etc
-    [MonthOfQuarter] VARCHAR(2),-- Month Number belongs to Quarter
+    [WeekOfMonth] VARCHAR(1),
+    [WeekOfQuarter] VARCHAR(2),
+    [WeekOfYear] VARCHAR(2),
+    [Month] VARCHAR(2),
+    [MonthName] VARCHAR(9),
+    [MonthOfQuarter] VARCHAR(2),
     [Quarter] CHAR(1),
-    [QuarterName] VARCHAR(9),--First,Second..
-    [Year] CHAR(4),-- Year value of Date stored in Row
-    [YearName] CHAR(7), --CY 2012,CY 2013
-    [MonthYear] CHAR(10), --Jan-2013,Feb-2013
+    [QuarterName] VARCHAR(9),
+    [Year] CHAR(4),
+    [YearName] CHAR(7),
+    [MonthYear] CHAR(10),
     [MMYYYY] CHAR(6),
     [FirstDayOfMonth] DATE,
     [LastDayOfMonth] DATE,
@@ -195,47 +187,40 @@ CREATE TABLE DimDate
     [LastDayOfQuarter] DATE,
     [FirstDayOfYear] DATE,
     [LastDayOfYear] DATE,
-    [IsHoliday] BIT,-- Flag 1=National Holiday, 0-No National Holiday
-    [IsWeekday] BIT,-- 0=Week End ,1=Week Day
-    [HolidayName] VARCHAR(50),--Name of Holiday in US
-)
+    [IsHoliday] BIT,
+    [IsWeekday] BIT,
+    [HolidayName] VARCHAR(50)
+);
 
+-- Create fact table (without FKs - they're added after indexes)
 CREATE TABLE FactSales (
-    FactSaleKey INT IDENTITY(1,1) PRIMARY KEY,
-    ProductKey      int       NOT NULL,
-    PromotionKey       int       NOT NULL,
-    CustomerKey        int       NOT NULL,
-    TerritoryKey int NOT NULL,
-    StoreKey int,
-    SaleReasonKey int,
-    ShipMethodKey int,
+    FactSalesKey INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    ProductKey      INT       NOT NULL,
+    PromotionKey    INT       NOT NULL,
+    CustomerKey     INT       NOT NULL,
+    TerritoryKey    INT       NOT NULL,
+    StoreKey        INT       NULL,
+    SalesReasonKey   INT       NULL,
+    ShipMethodKey   INT       NULL,
 
-    SalesOrderID       int       NOT NULL,
-    SalesOrderDetail   int       NOT NULL,
+    SalesOrderID       INT       NOT NULL,
+    SalesOrderDetail   INT       NOT NULL,
 
-    OrderQty int,
-    UnitPrice          money,
-    UnitPriceDiscount  money     NOT NULL,
-    OrderDateKey int,
-    DueDateKey int,
-    ShipDateKey int,
-    Status int,
-    OnlineOrderFlag bit,
-    TaxAllocated money,
-    Freight_Allocated money,
-    TotalDueTime money,
-    LineAmountSource int,
-    SalesInfoModifiedDate datetime,
-    LineAmount_Gross float,
-    LineDiscountAmount float,
-    LineAmount_Net float,
-    TotalDue_Line float,
-
-    Foreign key (ProductKey) references CompanyX.dbo.DimProduct (ProductKey) ON DELETE CASCADE ON UPDATE CASCADE,
-    Foreign key (PromotionKey) references CompanyX.dbo.DimPromotion (PromotionKey) ON DELETE CASCADE ON UPDATE CASCADE,
-    Foreign key (CustomerKey) references CompanyX.dbo.DimCustomer (CustomerKey) ON DELETE CASCADE ON UPDATE CASCADE,
-    Foreign key (TerritoryKey) references CompanyX.dbo.DimTerritory (TerritoryKey) ON DELETE CASCADE ON UPDATE CASCADE,
-    Foreign key (StoreKey) references CompanyX.dbo.DimStore (StoreKey) ON DELETE CASCADE ON UPDATE CASCADE,
-    Foreign key (SaleReasonKey) references CompanyX.dbo.DimSalesReason (ReasonKey) ON DELETE CASCADE ON UPDATE CASCADE,
-    Foreign key (ShipMethodKey) references CompanyX.dbo.DimShipMethod (ShipMethodKey) ON DELETE CASCADE ON UPDATE CASCADE
+    OrderQty           INT       NULL,
+    UnitPrice          MONEY     NULL,
+    UnitPriceDiscount  MONEY     NOT NULL,
+    OrderDateKey       INT       NULL,
+    DueDateKey         INT       NULL,
+    ShipDateKey        INT       NULL,
+    Status             INT       NULL,
+    OnlineOrderFlag    BIT       NULL,
+    TaxAllocated       MONEY     NULL,
+    Freight_Allocated  MONEY     NULL,
+    TotalDueTime       MONEY     NULL,
+    LineAmountSource   INT       NULL,
+    SalesInfoModifiedDate DATETIME NULL,
+    LineAmount_Gross   FLOAT     NULL,
+    LineDiscountAmount FLOAT     NULL,
+    LineAmount_Net     FLOAT     NULL,
+    TotalDue_Line      FLOAT     NULL
 );

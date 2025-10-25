@@ -7,10 +7,9 @@ WITH XMLNAMESPACES (
     'http://www.w3.org/1999/xhtml' AS html
 ),
 AdditionalInfo AS (
-    SELECT 
+    SELECT
         pm.Name AS ModelName,
         pm.ProductModelID,
-        -- (your existing extracted XML fields here)
         pm.CatalogDescription.value('(/p1:ProductDescription/p1:Features/wm:Warranty/wm:WarrantyPeriod)[1]', 'nvarchar(50)') AS WarrantyPeriod,
         pm.CatalogDescription.value('(/p1:ProductDescription/p1:Features/wm:Maintenance/wm:NoOfYears)[1]', 'nvarchar(50)') AS MaintenanceYears,
         pm.ModifiedDate AS ProductModelModifiedDate
@@ -18,36 +17,37 @@ AdditionalInfo AS (
     WHERE pm.CatalogDescription IS NOT NULL
 ),
 DetailedProduct AS (
-    SELECT 
+    SELECT
         P.*,
         AI.WarrantyPeriod,
         AI.MaintenanceYears,
         AI.ModelName,
         AI.ProductModelModifiedDate,
         P.ModifiedDate AS ProductModifiedDate
-    FROM AdditionalInfo AI 
-    RIGHT JOIN CompanyX.Production.Product P 
+    FROM AdditionalInfo AI
+    RIGHT JOIN CompanyX.Production.Product P
         ON AI.ProductModelID = P.ProductModelID
 ),
 FullProduct AS (
-    SELECT 
+    SELECT
         P.*,
-        Sc.Name AS SubCategoryName, 
+        Sc.Name AS SubCategoryName,
         C.Name AS CategoryName,
         Sc.ModifiedDate AS SubCategoryModifiedDate,
         C.ModifiedDate AS CategoryModifiedDate
-    FROM (CompanyX.Production.ProductSubcategory Sc 
-          JOIN CompanyX.Production.ProductCategory C 
+    FROM (CompanyX.Production.ProductSubcategory Sc
+          JOIN CompanyX.Production.ProductCategory C
               ON Sc.ProductCategoryID = C.ProductCategoryID)
-    RIGHT JOIN DetailedProduct P 
+    RIGHT JOIN DetailedProduct P
         ON P.ProductSubcategoryID = Sc.ProductSubcategoryID
 )
 INSERT INTO CompanyX.dbo.DimProduct (
-    ProductID, Name, Color, Size, Weight, Style, ModelName, 
-    CategoryName, SubCategoryName, StandardCost, ListPrice, 
-    WarrantyPeriod, NoOfYears, ModifiedDate
+    ProductID, Name, Color, Size, Weight, Style, ModelName,
+    CategoryName, SubCategoryName, StandardCost, ListPrice,
+    WarrantyPeriod, NoOfYears,
+    StartDate, EndDate
 )
-SELECT 
+SELECT
     ProductID,
     Name,
     Color,
@@ -61,16 +61,15 @@ SELECT
     ListPrice,
     WarrantyPeriod,
     FullProduct.MaintenanceYears AS NoOfYears,
-
-    -- Compute the *latest* ModifiedDate from all four
+    -- StartDate = Latest ModifiedDate from all four tables
     (
         SELECT MAX(v)
-        FROM (VALUES 
+        FROM (VALUES
                 (FullProduct.ProductModifiedDate),
                 (FullProduct.ProductModelModifiedDate),
                 (FullProduct.SubCategoryModifiedDate),
                 (FullProduct.CategoryModifiedDate)
              ) AS valueTable(v)
-    ) AS ModifiedDate
-
+    ) AS StartDate,
+    '9999-12-31' AS EndDate
 FROM FullProduct;

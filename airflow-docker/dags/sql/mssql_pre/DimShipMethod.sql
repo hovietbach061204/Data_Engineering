@@ -1,17 +1,15 @@
-Use CompanyX;
+USE CompanyX;
 
-;WITH ShipBaseData AS
-(
+;WITH ShipBaseData AS (
     SELECT
         sm.ShipMethodID,
         sm.[Name],
         sm.ShipBase,
+        sm.ShipRate,
         sm.ModifiedDate
     FROM CompanyX.Purchasing.ShipMethod AS sm
 ),
-ShipDateData AS
-(
-    -- Optional: Get the most recent ship date per ShipMethod
+ShipDateData AS (
     SELECT
         soh.ShipMethodID,
         MAX(soh.ShipDate) AS ShipDate
@@ -23,28 +21,31 @@ SELECT
     sbd.ShipMethodID,
     sbd.[Name],
     sbd.ShipBase,
+    sbd.ShipRate,
     sdd.ShipDate,
     sbd.ModifiedDate
 INTO #ShipMethodStage
 FROM ShipBaseData sbd
 LEFT JOIN ShipDateData sdd
-       ON sbd.ShipMethodID = sdd.ShipMethodID;
-SELECT * FROM #ShipMethodStage;
+    ON sbd.ShipMethodID = sdd.ShipMethodID;
 
-
-INSERT INTO dbo.DimShipMethod
-(
+INSERT INTO dbo.DimShipMethod (
     ShipMethodID,
     [Name],
     ShipBase,
+    ShipRate,
     ShipDate,
-    ModifiedDate
+    StartDate,
+    EndDate
 )
 SELECT
     ShipMethodID,
     [Name],
     ShipBase,
+    ShipRate,
     ShipDate,
-    ModifiedDate
+    ModifiedDate AS StartDate,  -- StartDate from ShipMethod
+    '9999-12-31' AS EndDate
 FROM #ShipMethodStage;
 
+DROP TABLE #ShipMethodStage;

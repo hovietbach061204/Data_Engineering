@@ -11,7 +11,7 @@ SET NOCOUNT ON;
         a.City,
         sp.[Name]                 AS StateProvinceName,
         cr.[Name]                 AS CountryRegionName,
-        -- keep the modified dates so we can compute a robust "ModifiedDate"
+        -- Collect all ModifiedDate columns
         a.ModifiedDate            AS AddressModifiedDate,
         sp.ModifiedDate           AS StateProvinceModifiedDate,
         cr.ModifiedDate           AS CountryRegionCodeModifiedDate,
@@ -107,7 +107,8 @@ INSERT INTO CompanyX.dbo.DimStore (
     City,
     StateProvinceName,
     CountryRegionName,
-    ModifiedDate
+    StartDate,
+    EndDate
 )
 SELECT
     oa.[Name],
@@ -128,6 +129,7 @@ SELECT
     oa.City,
     oa.StateProvinceName,
     oa.CountryRegionName,
+    -- StartDate = Latest ModifiedDate from all contributing tables
     (
         SELECT MAX(v)
         FROM (VALUES
@@ -137,7 +139,8 @@ SELECT
                 (oa.CountryRegionCodeModifiedDate),
                 (oa.StateProvinceModifiedDate)
              ) AS valueTable(v)
-    ) AS ModifiedDate
+    ) AS StartDate,
+    '9999-12-31' AS EndDate
 FROM OneAddressPerStore AS oa
 LEFT JOIN StoreWithDemographics AS d
     ON d.BusinessEntityID = oa.BusinessEntityID

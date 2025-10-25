@@ -1,6 +1,17 @@
-Use CompanyX;
+USE CompanyX;
+
 INSERT INTO CompanyX.dbo.DimPromotion (
-	SpecialOfferID,Description,Type,Category,DiscountPct,StartDate,EndDate,MinQty,MaxQty,ModifiedDate
+    SpecialOfferID, Description, Type, Category, DiscountPct,
+    StartDate, EndDate, MinQty, MaxQty
 )
-select SpecialOfferID,Description,Type,Category,DiscountPct,StartDate,EndDate,MinQty,MaxQty,ModifiedDate
-from CompanyX.Sales.SpecialOffer
+SELECT
+    SpecialOfferID,
+    Description,
+    Type,
+    Category,
+    DiscountPct,
+    ModifiedDate AS StartDate,  -- StartDate from SpecialOffer
+    '9999-12-31' AS EndDate,
+    MinQty,
+    MaxQty
+FROM CompanyX.Sales.SpecialOffer;
