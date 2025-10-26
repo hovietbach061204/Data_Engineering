@@ -105,7 +105,7 @@ OneAddressPerStore AS (
 
 SELECT
     oa.[Name],
-    oa.BusinessEntityID AS StoreID,
+    CAST(oa.BusinessEntityID AS INTEGER) AS StoreID,
     d.AnnualSales,
     d.AnnualRevenue,
     d.BusinessType,
@@ -113,9 +113,9 @@ SELECT
     d.YearOpened,
     d.Specialty,
     d.SquareFeet,
-    d.Brands,
+    CAST(d.Brands AS INTEGER) AS Brands,
     d.Internet,
-    d.NumberEmployees,
+    CAST(d.NumberEmployees AS INTEGER) AS NumberEmployees,
     oa.AddressType,
     oa.AddressLine1,
     oa.AddressLine2,

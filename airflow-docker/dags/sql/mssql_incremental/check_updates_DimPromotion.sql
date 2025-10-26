@@ -13,8 +13,8 @@ SELECT
     Category,
     StartDate AS PromotionStartDate,
     EndDate AS PromotionEndDate,
-    MinQty,
-    MaxQty,
+    CAST(MinQty AS INTEGER) AS MinQty,
+    CAST(MaxQty AS INTEGER) AS MaxQty,
     -- StartDate = ModifiedDate
     ModifiedDate AS StartDate,
     '9999-12-31' AS EndDate

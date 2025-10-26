@@ -8,13 +8,14 @@ DECLARE @WM_SalesOrderHeaderSalesReason DATETIME = '{{ watermark_dict["Sales.Sal
 
 WITH vSalesReasonWithUsage AS (
     SELECT DISTINCT
+        sohr.SalesOrderID,
         sr.SalesReasonID,
         sr.Name,
         sr.ReasonType,
         sr.ModifiedDate AS SalesReasonModifiedDate,
         sohr.ModifiedDate AS OrderReasonModifiedDate
     FROM Sales.SalesReason sr WITH (INDEX(IX_SalesReason_ModifiedDate))
-    LEFT JOIN Sales.SalesOrderHeaderSalesReason sohr WITH (INDEX(IX_SalesOrderHeaderSalesReason_ModifiedDate))
+    JOIN Sales.SalesOrderHeaderSalesReason sohr WITH (INDEX(IX_SalesOrderHeaderSalesReason_ModifiedDate))
         ON sr.SalesReasonID = sohr.SalesReasonID
     WHERE
         sr.ModifiedDate > @WM_SalesReason OR
@@ -22,7 +23,8 @@ WITH vSalesReasonWithUsage AS (
 )
 
 SELECT
-    SalesReasonID,
+    CAST (SalesOrderID AS INTEGER) AS SalesOrderID,
+    CAST (SalesReasonID AS INTEGER) AS SalesReasonID,
     Name,
     ReasonType,
     -- StartDate = Latest ModifiedDate from contributing tables
