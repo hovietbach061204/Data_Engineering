@@ -48,28 +48,39 @@ DEFAULT_ARGS = {
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
 class WatermarkManager:
-    """Manage watermarks via PostgreSQL metadata functions."""
-    def __init__(self, postgres_conn_id: str = PG_CONN_ID):
-        self.pg = PostgresHook(postgres_conn_id=postgres_conn_id)
+    """Manages dimension-level watermarks (not source tables)"""
 
-    def get_watermarks(self, table_names: List[str]) -> Dict[str, str]:
-        out: Dict[str, str] = {}
-        for t in table_names:
-            try:
-                row = self.pg.get_first("SELECT metadata.get_watermark(%s)", parameters=[t])
-                out[t] = row[0] if row else "1900-01-01 00:00:00"
-            except Exception as e:
-                logger.warning("Failed to get watermark for %s; defaulting. %s", t, e)
-                out[t] = "1900-01-01 00:00:00"
-        return out
+    def __init__(self, conn_id: str = PG_CONN_ID):
+        self.pg = PostgresHook(postgres_conn_id=conn_id)
 
-    def update_watermarks(self, table_names: List[str], new_wm: str) -> None:
-        for t in table_names:
-            self.pg.run(
-                "SELECT metadata.update_watermark(%s, %s::timestamp)",
-                parameters=[t, new_wm],
-            )
-            logger.info("✓ Updated watermark for %s → %s", t, new_wm)
+    def get_watermark(self, dim_table: str) -> datetime:
+        """
+        Get last watermark for a dimension table.
+
+        Args:
+            dim_table: Dimension table name (e.g., 'DimCustomer')
+
+        Returns:
+            Last watermark timestamp
+        """
+        sql = "SELECT metadata.get_watermark(%s)"
+        result = self.pg.get_first(sql, parameters=[dim_table])
+        if result and result[0]:
+            return result[0]
+        return datetime(1900, 1, 1)
+
+    def update_watermark(self, dim_table: str, new_watermark: str) -> None:
+        """
+        Update watermark for a dimension table.
+
+        Args:
+            dim_table: Dimension table name (e.g., 'DimCustomer')
+            new_watermark: New watermark value (YYYY-MM-DD HH:MM:SS format)
+        """
+        sql = "SELECT metadata.update_watermark(%s, %s::timestamp)"
+        self.pg.run(sql, parameters=[dim_table, new_watermark])
+        logger.info("Updated watermark for %s → %s", dim_table, new_watermark)
+
 
 
 class PostgresBulkLoader:
@@ -200,16 +211,15 @@ def check_updates_and_stage(table_name: str) -> str:
     """
     cfg = CONFIG[table_name]
     wm_mgr = WatermarkManager()
-    wms = wm_mgr.get_watermarks(cfg.sources)
+    last_wm = wm_mgr.get_watermark(table_name)
 
-    logger.info("=== %s: current watermarks ===", table_name)
-    for src, wm in wms.items():
-        logger.info("  • %s → %s", src, wm)
+    logger.info("=== %s: current watermark ===", table_name)
+    logger.info("  • %s → %s", table_name, last_wm)
 
-    # Render source SQL with watermarks
+    # Render source SQL with watermark
     with open(str(cfg.check_sql), "r") as f:
         sql_tmpl = f.read()
-    sql = Template(sql_tmpl).render(watermark_dict=wms)
+    sql = Template(sql_tmpl).render(watermark=last_wm.strftime('%Y-%m-%d %H:%M:%S'))
 
     # Pull changed rows from MSSQL
     mssql = MsSqlHook(mssql_conn_id=MSSQL_CONN_ID)
@@ -274,17 +284,15 @@ def update_watermarks_after_merge_py(table_name: str, check_result: str) -> None
     if "." in wm_clean:
         wm_clean = wm_clean.split(".", 1)[0]  # 'YYYY-MM-DD HH:MM:SS'
 
-    sources = CONFIG[table_name].sources
-    logger.info("%s: updating %d watermarks → %s", table_name, len(sources), wm_clean)
+    logger.info("%s: updating watermark → %s", table_name, wm_clean)
 
     wm_mgr = WatermarkManager()
-    for src in sources:
-        try:
-            wm_mgr.update_watermarks([src], wm_clean)
-            logger.info("✓ %s watermark → %s", src, wm_clean)
-        except Exception as e:
-            logger.error("✗ Failed to update watermark for %s: %s", src, e)
-            raise
+    try:
+        wm_mgr.update_watermark(table_name, wm_clean)
+        logger.info("✓ %s watermark → %s", table_name, wm_clean)
+    except Exception as e:
+        logger.error("✗ Failed to update watermark for %s: %s", table_name, e)
+        raise
 
 @dag(
     dag_id='incremental_update_pipeline',

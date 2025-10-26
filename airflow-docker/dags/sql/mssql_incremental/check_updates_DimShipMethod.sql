@@ -1,10 +1,7 @@
--- T-SQL
 USE CompanyX;
 SET NOCOUNT ON;
 
--- Watermarks passed as parameters (Jinja2 templating)
-DECLARE @WM_ShipMethod DATETIME = '{{ watermark_dict["Purchasing.ShipMethod"] }}';
-DECLARE @WM_SalesOrderHeader DATETIME = '{{ watermark_dict["Sales.SalesOrderHeader"] }}';
+DECLARE @WM DATETIME = '{{ watermark }}';
 
 WITH vShipMethodWithUsage AS (
     SELECT DISTINCT
@@ -19,8 +16,8 @@ WITH vShipMethodWithUsage AS (
     LEFT JOIN Sales.SalesOrderHeader soh WITH (INDEX(IX_SalesOrderHeader_ModifiedDate))
         ON sm.ShipMethodID = soh.ShipMethodID
     WHERE
-        sm.ModifiedDate > @WM_ShipMethod OR
-        soh.ModifiedDate > @WM_SalesOrderHeader
+        sm.ModifiedDate > @WM OR
+        soh.ModifiedDate > @WM
 )
 
 SELECT
@@ -29,7 +26,6 @@ SELECT
     ShipBase,
     ShipRate,
     ShipDate,
-    -- StartDate = Latest ModifiedDate from contributing tables
     (
         SELECT MAX(v)
         FROM (VALUES

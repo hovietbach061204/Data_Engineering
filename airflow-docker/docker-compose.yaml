@@ -75,15 +75,13 @@ x-airflow-common:
     AIRFLOW_CONN_MSSQL_SRC: ${AIRFLOW_CONN_MSSQL_SRC}
     AIRFLOW_CONN_PG_DWH: ${AIRFLOW_CONN_PG_DWH}
     AIRFLOW_CONN_SPARK_DEFAULT: ${AIRFLOW_CONN_SPARK_DEFAULT}
-#    JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-#    SPARK_HOME: /opt/spark
-#    PATH: /usr/lib/jvm/java-17-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
     - ${AIRFLOW_PROJ_DIR:-.}/jobs:/opt/airflow/jobs
+#    - /Volumes/SandiskSSD/Developer/Data_Engineering/Data_Engineer-project/airflow-docker/jobs/spark:/opt/airflow/jobs/spark
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -121,8 +119,6 @@ services:
     ports:
       - "7077:7077"        # Spark master RPC
       - "8081:8080"        # Spark UI on host:8081 (container still uses 8080)
-    volumes:
-      - ./dags/spark_jobs:/opt/airflow/jobs/spark  # <-- your transform.py lives here
 
   spark-worker:
     image: apache/spark:3.5.1
@@ -136,8 +132,6 @@ services:
                "--memory", "2g" ]
     environment:
       - SPARK_NO_DAEMONIZE=1
-    volumes:
-      - ./dags/spark_jobs:/opt/airflow/jobs/spark
 
   redis:
     # Redis is limited to 7.2-bookworm due to licencing change

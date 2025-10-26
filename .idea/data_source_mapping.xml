@@ -4,6 +4,15 @@
     <file url="file://$USER_HOME$/Downloads/DimCreateTable (1).sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
     <file url="file://$USER_HOME$/Downloads/ETLDimDate.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
     <file url="file://$USER_HOME$/Downloads/FactSales (1).sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimCustomer.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimProduct.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimPromotion.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimSalesReason.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimShipMethod.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimStore.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimTerritory.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_FactSales.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCreateIndexes.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCreateTable.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCustomer.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimDate.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
@@ -14,5 +23,16 @@
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimStore.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimTerritory.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/FactSales.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/create_incremental_indexes.sql" value="a4137b60-aa87-4c04-b1ed-09c6e1a6a66b" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/ddl/auto_generate_key_column.sql" value="59a9a862-23c3-4130-a989-9f966709e530" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/ddl/create_dwh_indexes.sql" value="59a9a862-23c3-4130-a989-9f966709e530" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/ddl/create_watermark_tables.sql" value="59a9a862-23c3-4130-a989-9f966709e530" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimCustomer.sql" value="59a9a862-23c3-4130-a989-9f966709e530" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimProduct.sql" value="59a9a862-23c3-4130-a989-9f966709e530" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimPromotion.sql" value="59a9a862-23c3-4130-a989-9f966709e530" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimSalesReason.sql" value="59a9a862-23c3-4130-a989-9f966709e530" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimShipMethod.sql" value="59a9a862-23c3-4130-a989-9f966709e530" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimStore.sql" value="59a9a862-23c3-4130-a989-9f966709e530" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimTerritory.sql" value="59a9a862-23c3-4130-a989-9f966709e530" />
   </component>
 </project>

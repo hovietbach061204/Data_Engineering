@@ -4,6 +4,15 @@
     <file url="file://$USER_HOME$/Downloads/DimCreateTable (1).sql" dialect="TSQL" />
     <file url="file://$USER_HOME$/Downloads/ETLDimDate.sql" dialect="TSQL" />
     <file url="file://$USER_HOME$/Downloads/FactSales (1).sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimCustomer.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimProduct.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimPromotion.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimSalesReason.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimShipMethod.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimStore.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_DimTerritory.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_incremental/check_updates_FactSales.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCreateIndexes.sql" dialect="TSQL" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCreateTable.sql" dialect="TSQL" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimCustomer.sql" dialect="TSQL" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimDate.sql" dialect="TSQL" />
@@ -14,6 +23,17 @@
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimStore.sql" dialect="TSQL" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/DimTerritory.sql" dialect="TSQL" />
     <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/FactSales.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/mssql_pre/create_incremental_indexes.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/ddl/auto_generate_key_column.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/ddl/create_dwh_indexes.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/ddl/create_watermark_tables.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimCustomer.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimProduct.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimPromotion.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimSalesReason.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimShipMethod.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimStore.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/airflow-docker/dags/sql/postgres/merge_DimTerritory.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/console.sql" dialect="TSQL" />
   </component>
 </project>

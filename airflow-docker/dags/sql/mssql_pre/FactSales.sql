@@ -1,105 +1,222 @@
 USE CompanyX;
 SET NOCOUNT ON;
 
-With baseTable as 
-(select H.SalesOrderID,SalesOrderDetailID,H.SalesOrderID+SalesOrderDetailID as DateID,UnitPrice,UnitPriceDiscount,UnitPriceDiscount*OrderQty as ExtendedDiscount, P.StandardCost, P.StandardCost * OrderQty as ExtendedCost,LineTotal,H.OrderDate,H.DueDate,H.ShipDate,H.ModifiedDate
-from (CompanyX.Sales.SalesOrderDetail D JOIN CompanyX.Sales.SalesOrderHeader H ON (D.SalesOrderID = H.SalesOrderID)) JOIN CompanyX.Production.Product P ON (D.ProductID = P.ProductID)),
-ProductKey as
-(select SalesOrderID,SalesOrderDetailID,P.ProductKey 
-from CompanyX.Sales.SalesOrderDetail D JOIN dbo.DimProduct P ON (D.ProductID=P.ProductID)),
-PromoKey as
-(select SalesOrderID,SalesOrderDetailID,P.PromotionKey
-from CompanyX.Sales.SalesOrderDetail D JOIN dbo.DimPromotion P ON (D.SpecialOfferID = P.SpecialOfferID)),
-CustomerKey as
-(select CustomerKey,SalesOrderID
-from dbo.DimCustomer C JOIN CompanyX.Sales.SalesOrderHeader H ON (C.CustomerID = H.CustomerID)),
-KeyAddersFirst3 as (select CK.SalesOrderID,PK.SalesOrderDetailID,CK.CustomerKey,PK.PromotionKey,PDK.ProductKey
-from (CustomerKey CK JOIN PromoKey PK ON CK.SalesOrderID = PK.SalesOrderID)
-JOIN ProductKey PDK ON (PDK.SalesOrderDetailID = PK.SalesOrderDetailID and PDK.SalesOrderID = PK.SalesOrderID)),
-/* join sales header with territoryID */
-TerritoryAdder as (
-select SH.SalesOrderID,T.TerritoryID,T.TerritoryKey
-from CompanyX.Sales.SalesOrderHeader SH join dbo.DimTerritory T on (SH.TerritoryID = T.TerritoryID)
+;WITH
+-- 1) map detail lines to surrogate product key
+ProductKey AS (
+    SELECT
+        d.SalesOrderID,
+        d.SalesOrderDetailID,
+        p.ProductKey
+    FROM CompanyX.Sales.SalesOrderDetail AS d
+    JOIN dbo.DimProduct                 AS p ON p.ProductID = d.ProductID
 ),
-/* join sales header with storeID*/
-StoreAdder as (
-select S.StoreKey,SH.SalesOrderID
-from (CompanyX.Sales.Customer C join dbo.DimStore S on (C.StoreID = S.StoreID))
-								right join CompanyX.Sales.SalesOrderHeader SH on (SH.CustomerID = C.CustomerID)
+
+-- 2) map detail lines to surrogate promotion key
+PromoKey AS (
+    SELECT
+        d.SalesOrderID,
+        d.SalesOrderDetailID,
+        pr.PromotionKey
+    FROM CompanyX.Sales.SalesOrderDetail AS d
+    JOIN dbo.DimPromotion               AS pr ON pr.SpecialOfferID = d.SpecialOfferID
 ),
-/* join with reason*/
-ReasonAdder as (
-select SH.SalesOrderID,R.ReasonKey
-from CompanyX.Sales.SalesOrderHeader SH join dbo.DimSalesReason R on (SH.SalesOrderID = R.SalesOrderID)
+
+-- 3) map order header to surrogate customer key
+CustomerKey AS (
+    SELECT
+        c.CustomerKey,
+        h.SalesOrderID
+    FROM dbo.DimCustomer                AS c
+    JOIN CompanyX.Sales.SalesOrderHeader AS h ON h.CustomerID = c.CustomerID
 ),
-/* join with ShipMethod */
-ShipMethodAdder as (
-select H.SalesOrderID,S.ShipMethodKey
-from CompanyX.Sales.SalesOrderHeader H join dbo.DimShipMethod S on (H.ShipMethodID = S.ShipMethodID)
+
+-- 4) combine product/promo/customer keys
+Keys3 AS (
+    SELECT
+        ck.SalesOrderID,
+        pk.SalesOrderDetailID,
+        ck.CustomerKey,
+        pk.PromotionKey,
+        prk.ProductKey
+    FROM CustomerKey AS ck
+    JOIN PromoKey    AS pk  ON pk.SalesOrderID       = ck.SalesOrderID
+    JOIN ProductKey  AS prk ON prk.SalesOrderID      = pk.SalesOrderID
+                           AND prk.SalesOrderDetailID = pk.SalesOrderDetailID
 ),
-/*join first3 keys with territory keys together */
-Key4 as (
-select KA.*,TA.TerritoryKey
-from KeyAddersFirst3 KA
-						join TerritoryAdder TA on (KA.SalesOrderID = TA.SalesOrderID)
+
+-- 5) add territory (from header)
+TerritoryMap AS (
+    SELECT
+        sh.SalesOrderID,
+        t.TerritoryID,
+        t.TerritoryKey
+    FROM CompanyX.Sales.SalesOrderHeader AS sh
+    JOIN dbo.DimTerritory                AS t  ON t.TerritoryID = sh.TerritoryID
 ),
-/* join first4 with ReasonKey */
-Key5 as (
-	select Key4.*,DimSalesReason.ReasonKey
-	from Key4 left join dbo.DimSalesReason on (Key4.SalesOrderID = DimSalesReason.SalesOrderID)
+
+-- 6) add store (via customer -> header)
+StoreMap AS (
+    SELECT
+        s.StoreKey,
+        sh.SalesOrderID
+    FROM CompanyX.Sales.Customer         AS c
+    JOIN dbo.DimStore                    AS s  ON s.StoreID     = c.StoreID
+    RIGHT JOIN CompanyX.Sales.SalesOrderHeader AS sh ON sh.CustomerID = c.CustomerID
 ),
-/* join 5 keys with StoreKey*/
-Key6 as (
-	select distinct Key5.*,S.StoreKey
-	from Key5 join StoreAdder S on (Key5.SalesOrderID = S.SalesOrderID)
+
+-- 7) add sales reason (per order)
+ReasonMap AS (
+    SELECT
+        sh.SalesOrderID,
+        r.SalesReasonKey
+    FROM CompanyX.Sales.SalesOrderHeader AS sh
+    JOIN dbo.DimSalesReason              AS r  ON r.SalesOrderID = sh.SalesOrderID
 ),
-OrderDateKeyAdder as (
-	select D.DateKey, H.SalesOrderID
-	from CompanyX.Sales.SalesOrderHeader H join dbo.DimDate D on (H.OrderDate = D.Date)
+
+-- 8) add ship method (from header)
+ShipMethodMap AS (
+    SELECT
+        h.SalesOrderID,
+        sm.ShipMethodKey
+    FROM CompanyX.Sales.SalesOrderHeader AS h
+    JOIN dbo.DimShipMethod               AS sm ON sm.ShipMethodID = h.ShipMethodID
 ),
-ShipDateKeyAdder as (
-	select D.DateKey, H.SalesOrderID
-	from CompanyX.Sales.SalesOrderHeader H join dbo.DimDate D on (H.ShipDate = D.Date)
+
+-- 9) combine Keys3 + territory
+Keys4 AS (
+    SELECT
+        k3.*,
+        tm.TerritoryKey
+    FROM Keys3       AS k3
+    JOIN TerritoryMap AS tm ON tm.SalesOrderID = k3.SalesOrderID
 ),
-DueDateKeyAdder as (
-	select D.DateKey, H.SalesOrderID
-	from CompanyX.Sales.SalesOrderHeader H join dbo.DimDate D on (H.DueDate = D.Date)
+
+-- 10) add optional SalesReasonKey
+Keys5 AS (
+    SELECT
+        k4.*,
+        rs.SalesReasonKey
+    FROM Keys4 AS k4
+    LEFT JOIN dbo.DimSalesReason AS rs ON rs.SalesOrderID = k4.SalesOrderID
 ),
-DateKeyAdder as (
-	select OrderDateKeyAdder.SalesOrderID, OrderDateKeyAdder.DateKey as OrderDateKey, ShipDateKeyAdder.DateKey as ShipDateKey, DueDateKeyAdder.DateKey as DueDateKey
-	from OrderDateKeyAdder join ShipDateKeyAdder on (OrderDateKeyAdder.SalesOrderID = ShipDateKeyAdder.SalesOrderID)
-						   join DueDateKeyAdder  on (OrderDateKeyAdder.SalesOrderID = DueDateKeyAdder.SalesOrderID)
+
+-- 11) add store
+Keys6 AS (
+    SELECT DISTINCT
+        k5.*,
+        s.StoreKey
+    FROM Keys5   AS k5
+    JOIN StoreMap AS s ON s.SalesOrderID = k5.SalesOrderID
 ),
-Key7 as (
-	select distinct Key6.*,ShipMethodAdder.ShipMethodKey, OrderDateKey, ShipDateKey, DueDateKey
-	from Key6 join ShipMethodAdder on (Key6.SalesOrderID = ShipMethodAdder.SalesOrderID)
-			  join DateKeyAdder    on (Key6.SalesOrderID = DateKeyAdder.SalesOrderID)
+
+-- 12) date keys
+OrderDateKey AS (
+    SELECT d.DateKey, h.SalesOrderID
+    FROM CompanyX.Sales.SalesOrderHeader AS h
+    JOIN dbo.DimDate                     AS d ON d.[Date] = h.OrderDate
+),
+ShipDateKey AS (
+    SELECT d.DateKey, h.SalesOrderID
+    FROM CompanyX.Sales.SalesOrderHeader AS h
+    JOIN dbo.DimDate                     AS d ON d.[Date] = h.ShipDate
+),
+DueDateKey AS (
+    SELECT d.DateKey, h.SalesOrderID
+    FROM CompanyX.Sales.SalesOrderHeader AS h
+    JOIN dbo.DimDate                     AS d ON d.[Date] = h.DueDate
+),
+
+DateKeys AS (
+    SELECT
+        od.SalesOrderID,
+        od.DateKey AS OrderDateKey,
+        sd.DateKey AS ShipDateKey,
+        dd.DateKey AS DueDateKey
+    FROM OrderDateKey AS od
+    JOIN ShipDateKey  AS sd ON sd.SalesOrderID = od.SalesOrderID
+    JOIN DueDateKey   AS dd ON dd.SalesOrderID = od.SalesOrderID
+),
+
+-- 13) final key set: add ship method + all date keys
+KeysFinal AS (
+    SELECT DISTINCT
+        k6.*,
+        sm.ShipMethodKey,
+        dk.OrderDateKey,
+        dk.ShipDateKey,
+        dk.DueDateKey
+    FROM Keys6        AS k6
+    JOIN ShipMethodMap AS sm ON sm.SalesOrderID = k6.SalesOrderID
+    JOIN DateKeys      AS dk ON dk.SalesOrderID = k6.SalesOrderID
 )
-insert into dbo.FactSales (
-	SalesOrderID,SalesOrderDetail,ProductKey,PromotionKey,CustomerKey,TerritoryKey,StoreKey,SaleReasonKey,
-	OrderQty,UnitPrice,UnitPriceDiscount,OrderDateKey,DueDateKey,ShipDateKey,
-	Status,OnlineOrderFlag,TaxAllocated,Freight_Allocated,TotalDueTime,LineAmountSource,
-	SalesInfoModifiedDate,ShipMethodKey
+
+-- 14) load FactSales
+INSERT INTO dbo.FactSales (
+      SalesOrderID
+    , SalesOrderDetail
+    , ProductKey
+    , PromotionKey
+    , CustomerKey
+    , TerritoryKey
+    , StoreKey
+    , SalesReasonKey
+    , OrderQty
+    , UnitPrice
+    , UnitPriceDiscount
+    , OrderDateKey
+    , DueDateKey
+    , ShipDateKey
+    , Status
+    , OnlineOrderFlag
+    , TaxAllocated
+    , Freight_Allocated
+    , TotalDueTime
+    , LineAmountSource
+    , SalesInfoModifiedDate
+    , ShipMethodKey
 )
-select distinct Key7.SalesOrderID,Key7.SalesOrderDetailID,Key7.ProductKey,Key7.PromotionKey,Key7.CustomerKey,Key7.TerritoryKey,Key7.StoreKey,Key7.ReasonKey,
-D.OrderQty,D.UnitPrice,D.UnitPriceDiscount,Key7.OrderDateKey,Key7.DueDateKey,Key7.ShipDateKey,
-H.Status,H.OnlineOrderFlag,H.TaxAmt,H.Freight,H.TotalDue,D.LineTotal,
-(
+SELECT DISTINCT
+      kf.SalesOrderID
+    , kf.SalesOrderDetailID
+    , kf.ProductKey
+    , kf.PromotionKey
+    , kf.CustomerKey
+    , kf.TerritoryKey
+    , kf.StoreKey
+    , kf.SalesReasonKey
+    , d.OrderQty
+    , d.UnitPrice
+    , d.UnitPriceDiscount
+    , kf.OrderDateKey
+    , kf.DueDateKey
+    , kf.ShipDateKey
+    , h.Status
+    , h.OnlineOrderFlag
+    , h.TaxAmt
+    , h.Freight
+    , h.TotalDue
+    , d.LineTotal
+    , (
         SELECT MAX(v)
-        FROM (VALUES
-                (H.ModifiedDate),
-				(D.ModifiedDate)
-             ) AS valueTable(v)
-    ) AS ModifiedDate,
-Key7.ShipMethodKey
-from CompanyX.Sales.SalesOrderHeader H join CompanyX.Sales.SalesOrderDetail D on (H.SalesOrderID = D.SalesOrderID)
-									   join Key7 on (H.SalesOrderID = Key7.SalesOrderID and D.SalesOrderDetailID = Key7.SalesOrderDetailID )
+        FROM (VALUES (h.ModifiedDate), (d.ModifiedDate)) AS vt(v)
+      ) AS SalesInfoModifiedDate
+    , kf.ShipMethodKey
+FROM CompanyX.Sales.SalesOrderHeader AS h
+JOIN CompanyX.Sales.SalesOrderDetail AS d
+      ON d.SalesOrderID = h.SalesOrderID
+JOIN KeysFinal AS kf
+      ON kf.SalesOrderID      = h.SalesOrderID
+     AND kf.SalesOrderDetailID = d.SalesOrderDetailID;
+GO
 
-go
+-- 15) post-load derived amounts
 UPDATE dbo.FactSales
-SET LineAmount_Gross = UnitPrice * OrderQty,
-    LineDiscountAmount = UnitPrice * UnitPriceDiscount * OrderQty,
-    LineAmount_Net = UnitPrice * (1-UnitPriceDiscount) * OrderQty;
+SET
+    LineAmount_Gross    = UnitPrice * OrderQty,
+    LineDiscountAmount  = UnitPrice * UnitPriceDiscount * OrderQty,
+    LineAmount_Net      = UnitPrice * (1 - UnitPriceDiscount) * OrderQty;
 
 UPDATE dbo.FactSales
-Set TotalDue_Line = LineAmount_Net + TaxAllocated + Freight_Allocated
+SET
+    TotalDue_Line = LineAmount_Net + TaxAllocated + Freight_Allocated;

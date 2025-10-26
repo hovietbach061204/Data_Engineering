@@ -13,6 +13,7 @@ TABLES = ["DimCustomer","DimProduct","DimPromotion","DimSalesReason","DimShipMet
 DIMS = ["DimProduct", "DimPromotion", "DimSalesReason", "DimTerritory", "DimShipMethod", "DimStore", "DimCustomer", "DimDate"]
 BASE_SQL = Path("/opt/airflow/dags/sql")
 MSSQL_PRE_DIR = BASE_SQL / "mssql_pre"
+POSTGRES_DIR = BASE_SQL / "postgres"
 
 @dag(
     dag_id="mssql_to_postgres_dwh_pipeline",
@@ -47,6 +48,56 @@ def dwh_pipeline():
         """Create all table schemas first"""
         run_sql_file(MSSQL_PRE_DIR / "DimCreateTable.sql")
         return "DDL created"
+
+    @task()
+    def create_indexes_and_fks():
+        """Create indexes and foreign keys after data is loaded"""
+        run_sql_file(MSSQL_PRE_DIR / "DimCreateIndexes.sql")
+        return "Indexes and FKs created"
+
+    @task()
+    def create_incremental_indexes():
+        """Create indexes for incremental loading watermark queries"""
+        run_sql_file(MSSQL_PRE_DIR / "create_incremental_indexes.sql")
+        return "Incremental indexes created"
+
+    @task()
+    def create_dwh_indexes():
+        """Create indexes on PostgreSQL DWH tables after data load"""
+        from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+        pg = PostgresHook(postgres_conn_id=PG_CONN_ID)
+        sql_path = POSTGRES_DIR / "ddl" / "create_dwh_indexes.sql"
+
+        sql = sql_path.read_text(encoding="utf-8")
+        pg.run(sql)
+
+        return "PostgreSQL DWH indexes created"
+
+    @task()
+    def create_watermark_metadata():
+        """Create watermark tracking table in PostgreSQL"""
+        from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+        pg = PostgresHook(postgres_conn_id=PG_CONN_ID)
+        watermark_sql_path = POSTGRES_DIR / "ddl" / "create_watermark_tables.sql"
+
+        sql = watermark_sql_path.read_text(encoding="utf-8")
+        pg.run(sql)
+
+        return "Watermark metadata created"
+
+
+    @task()
+    def auto_generate_key_column():
+        from airflow.providers.postgres.hooks.postgres import PostgresHook
+        pg = PostgresHook(postgres_conn_id=PG_CONN_ID)
+        autokey_sql_path = POSTGRES_DIR / "ddl" / "auto_generate_key_column.sql"
+
+        sql = autokey_sql_path.read_text(encoding="utf-8")
+        pg.run(sql)
+
+        return "Autokey column created"
 
     @task()
     def extract_dimension(table_name: str):
@@ -215,12 +266,21 @@ def dwh_pipeline():
 
     @task()
     def transform_staging_to_dwh(table_name: str, mode: str = "overwrite"):
-        """Transform staging data to DWH using SQL (trim, dedup, etc.)"""
+        """
+        Transform staging -> DWH.
+
+        overwrite: TRUNCATE target CASCADE and INSERT (keeps PK/FKs/indexes).
+        append:    INSERT only.
+
+        NOTE: TRUNCATE CASCADE will also truncate any referencing tables
+        (e.g., FactSales). Make sure your DAG reloads facts after dimensions.
+        """
         from airflow.providers.postgres.hooks.postgres import PostgresHook
 
         q = lambda ident: '"' + ident.replace('"', '""') + '"'
         pg = PostgresHook(postgres_conn_id=PG_CONN_ID)
 
+        # discover columns from STAGING
         cols = pg.get_records(
             """
             SELECT column_name, data_type
@@ -236,32 +296,40 @@ def dwh_pipeline():
 
         char_types = {"character varying", "varchar", "character", "char", "text", "bpchar", "citext"}
         select_exprs = [
-            f'TRIM({q(c)}) AS {q(c)}' if t in char_types else q(c)
+            f'TRIM("{c}") AS "{c}"' if t in char_types else f'"{c}"'
             for c, t in cols
         ]
+        col_list = ", ".join(f'"{c}"' for c, _ in cols)
         select_sql = ", ".join(select_exprs)
 
-        src = f"{q(STAGING_SCHEMA)}.{q(table_name)}"
-        dst = f"{q(DWH_SCHEMA)}.{q(table_name)}"
+        src = f'{q(STAGING_SCHEMA)}.{q(table_name)}'
+        dst = f'{q(DWH_SCHEMA)}.{q(table_name)}'
 
-        pg.run(f"CREATE SCHEMA IF NOT EXISTS {q(DWH_SCHEMA)};")
+        # ensure schema & table
+        pg.run(f'CREATE SCHEMA IF NOT EXISTS {q(DWH_SCHEMA)};')
+        exists = pg.get_first(
+            """
+            SELECT EXISTS (SELECT 1
+                           FROM information_schema.tables
+                           WHERE table_schema = %s
+                             AND table_name = %s);
+            """,
+            parameters=(DWH_SCHEMA, table_name),
+        )[0]
+        if not exists:
+            pg.run(f'CREATE TABLE {dst} (LIKE {src} INCLUDING ALL);')
 
         if mode == "overwrite":
-            sql = f"""
-            DROP TABLE IF EXISTS {dst};
-            CREATE TABLE {dst} AS
-            SELECT {select_sql} FROM {src};
-            """
+            # The key change: CASCADE handles FK references (e.g., FactSales -> DimPromotion)
+            pg.run(f"TRUNCATE TABLE {dst} CASCADE;")
+            pg.run(f"INSERT INTO {dst} ({col_list}) SELECT {select_sql} FROM {src};")
+
         elif mode == "append":
-            sql = f"""
-            INSERT INTO {dst} ({", ".join(q(c) for c, _ in cols)})
-            SELECT {", ".join(q(c) for c, _ in cols)} FROM {src};
-            """
+            pg.run(f"INSERT INTO {dst} ({col_list}) SELECT {select_sql} FROM {src};")
         else:
             raise ValueError("mode must be 'overwrite' or 'append'")
 
-        pg.run(sql)
-        return f"Transformed {table_name} to {DWH_SCHEMA} ({mode})"
+        return f"Transformed {table_name} -> {DWH_SCHEMA} ({mode})"
 
     @task()
     def spark_transform_all():
@@ -290,68 +358,41 @@ def dwh_pipeline():
             verbose=True,
         ).execute({})
 
-    # # Stage 1: Create DDL
+    # Stage 1: run setup tasks exactly once, in order
     ddl_task = create_ddl()
-    dim_extracts = []
+    indexes_task = create_indexes_and_fks()
+    incremental_indexes_task = create_incremental_indexes()
+    watermark_task = create_watermark_metadata()
+    dwh_indexes_task = create_dwh_indexes()
+    auto_generate_key_column = auto_generate_key_column()
 
-    # Stage 2: dimensions (extract → load → transform, per-dimension)
+    # Ensure DDL completes before watermark init
+    chain(ddl_task, indexes_task, incremental_indexes_task, watermark_task)
+
+    # Stage 2: per-dimension pipelines (extract → load → transform)
+    dim_extracts = []
     for dim in DIMS:
         extract = extract_dimension.override(task_id=f"extract_{dim}")(dim)
         load = load_to_staging.override(task_id=f"load_{dim}")(dim)
         trans = transform_staging_to_dwh.override(task_id=f"transform_{dim}")(dim)
 
-        # per-dimension pipeline
-        chain(extract, load, trans)
-
-        # gate extracts on DDL
-        ddl_task >> extract
+        # Gate every dimension on watermark_task (which itself waits on ddl_task)
+        chain(watermark_task, extract, load, trans)
 
         dim_extracts.append(extract)
 
-    # Stage 3: fact
+    # Stage 3: fact pipeline
     fact_extract = extract_fact()
     fact_load = load_to_staging.override(task_id="load_FactSales")("FactSales")
     fact_transform = transform_staging_to_dwh.override(task_id="transform_FactSales")("FactSales")
 
-    # fact_extract waits for ALL dimension extracts to finish
+    # Fact extract waits for ALL dimension extracts to finish
     fact_extract.set_upstream(dim_extracts)
 
-    # fact pipeline runs only after fact_extract
+    # Then load & transform fact
     chain(fact_extract, fact_load, fact_transform)
 
-    # ---- Stage 0: DDL ----
-    # ddl_task = create_ddl()
-    #
-    # # (Optional) one big Spark job at the end
-    # spark_transform_task = spark_transform_all()
-    #
-    # # For wiring later
-    # dim_extract_tasks = []
-    # dim_load_tasks = []
-    #
-    # # ---- Stage 1 & 2: dimensions ----
-    # for dim in DIMS:
-    #     # extract
-    #     extract = extract_dimension.override(task_id=f"extract_{dim}")(dim)
-    #     ddl_task >> extract  # gate extracts on DDL
-    #     dim_extract_tasks.append(extract)
-    #
-    #     # load (starts only after its own extract)
-    #     load = load_to_staging.override(task_id=f"load_{dim}")(dim)
-    #     extract >> load
-    #     dim_load_tasks.append(load)
-    #
-    # # ---- Stage 3: fact ----
-    # fact_extract = extract_fact()
-    # # fact extract waits for ALL dimension extracts to finish
-    # fact_extract.set_upstream(dim_extract_tasks)
-    #
-    # fact_load = load_to_staging.override(task_id="load_FactSales")("FactSales")
-    # fact_extract >> fact_load
-    #
-    # # ---- Stage 4: Spark (runs only after ALL loads are done) ----
-    # # This enforces: wait for every dim load + the fact load
-    # spark_transform_task.set_upstream(dim_load_tasks + [fact_load])
-
+    # Stage 4: Create PostgreSQL indexes AFTER all data is loaded
+    fact_transform >> dwh_indexes_task >> auto_generate_key_column
 
 _ = dwh_pipeline()

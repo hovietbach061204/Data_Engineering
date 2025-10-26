@@ -1,10 +1,7 @@
--- T-SQL
 USE CompanyX;
 SET NOCOUNT ON;
 
--- Watermarks passed as parameters (Jinja2 templating)
-DECLARE @WM_SalesReason DATETIME = '{{ watermark_dict["Sales.SalesReason"] }}';
-DECLARE @WM_SalesOrderHeaderSalesReason DATETIME = '{{ watermark_dict["Sales.SalesOrderHeaderSalesReason"] }}';
+DECLARE @WM DATETIME = '{{ watermark }}';
 
 WITH vSalesReasonWithUsage AS (
     SELECT DISTINCT
@@ -18,8 +15,8 @@ WITH vSalesReasonWithUsage AS (
     JOIN Sales.SalesOrderHeaderSalesReason sohr WITH (INDEX(IX_SalesOrderHeaderSalesReason_ModifiedDate))
         ON sr.SalesReasonID = sohr.SalesReasonID
     WHERE
-        sr.ModifiedDate > @WM_SalesReason OR
-        sohr.ModifiedDate > @WM_SalesOrderHeaderSalesReason
+        sr.ModifiedDate > @WM OR
+        sohr.ModifiedDate > @WM
 )
 
 SELECT
@@ -27,7 +24,6 @@ SELECT
     CAST (SalesReasonID AS INTEGER) AS SalesReasonID,
     Name,
     ReasonType,
-    -- StartDate = Latest ModifiedDate from contributing tables
     (
         SELECT MAX(v)
         FROM (VALUES

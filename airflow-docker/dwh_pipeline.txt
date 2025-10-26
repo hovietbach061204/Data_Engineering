@@ -1,0 +1,34 @@
+# ---- Stage 0: DDL ----
+    # ddl_task = create_ddl()
+    #
+    # # (Optional) one big Spark job at the end
+    # spark_transform_task = spark_transform_all()
+    #
+    # # For wiring later
+    # dim_extract_tasks = []
+    # dim_load_tasks = []
+    #
+    # # ---- Stage 1 & 2: dimensions ----
+    # for dim in DIMS:
+    #     # extract
+    #     extract = extract_dimension.override(task_id=f"extract_{dim}")(dim)
+    #     ddl_task >> extract  # gate extracts on DDL
+    #     dim_extract_tasks.append(extract)
+    #
+    #     # load (starts only after its own extract)
+    #     load = load_to_staging.override(task_id=f"load_{dim}")(dim)
+    #     extract >> load
+    #     dim_load_tasks.append(load)
+    #
+    # # ---- Stage 3: fact ----
+    # fact_extract = extract_fact()
+    # # fact extract waits for ALL dimension extracts to finish
+    # fact_extract.set_upstream(dim_extract_tasks)
+    #
+    # fact_load = load_to_staging.override(task_id="load_FactSales")("FactSales")
+    # fact_extract >> fact_load
+    #
+    # # ---- Stage 4: Spark (runs only after ALL loads are done) ----
+    # # This enforces: wait for every dim load + the fact load
+    # spark_transform_task.set_upstream(dim_load_tasks + [fact_load])
+

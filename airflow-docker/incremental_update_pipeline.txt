@@ -1,0 +1,127 @@
+# ── A neat, visual group for each dimension ───────────────────────────────────
+
+# @task_group
+# def dimension_flow(dim_name: str):
+#     # 01) Check updates and stage
+#     check_stage = check_updates_and_stage.override(task_id=f"{dim_name}__check_stage")(dim_name)
+#
+#     # 02) Decide branch
+#     decide = decide_merge.override(task_id=f"{dim_name}__decide")(check_stage, dim_name)
+#
+#     # 03) Merge
+#     merge = SQLExecuteQueryOperator(
+#         task_id=f"{dim_name}__merge",
+#         conn_id=PG_CONN_ID,
+#         sql=str(CONFIG[dim_name].merge_sql),
+#         params={"DWH_SCHEMA": DWH_SCHEMA, "STAGING_SCHEMA": STAGING_SCHEMA},
+#         split_statements=False,
+#         autocommit=True,
+#         do_xcom_push=False,
+#     )
+#
+#     # 04) Skip endpoint
+#     skip = EmptyOperator(task_id=f"{dim_name}__skip")
+#
+#     # 05) Update watermark
+#     update_wm = PythonOperator(
+#         task_id=f'{dim_name}__update_wm',
+#         python_callable=update_watermarks_after_merge_py,
+#         op_kwargs={
+#             'table_name': dim_name,
+#             # pull the stage result via templating at runtime (no dependency edge)
+#             'check_result': "{{ ti.xcom_pull(task_ids='" + f"{dim_name}__check_stage" + "') }}",
+#         },
+#     )
+#
+#     # internal dependencies
+#     check_stage >> decide
+#     decide >> [merge, skip]
+#     merge >> update_wm
+#
+#     # return the last task for DAG chaining
+#     return update_wm
+
+# ── DAG definition ────────────────────────────────────────────────────────────
+
+# @dag(
+#     dag_id="incremental_update_pipeline",
+#     default_args=DEFAULT_ARGS,
+#     description="Incremental updates for all dimension and fact tables with parallel processing",
+#     schedule="@daily",
+#     start_date=datetime(2025, 10, 1),
+#     catchup=False,
+#     tags=["dwh", "incremental", "scd2"],
+#     max_active_runs=1,
+# )
+# def incremental_update_pipeline():
+#     start = EmptyOperator(task_id="start")
+#     dimensions_complete = EmptyOperator(task_id="dimensions_complete", trigger_rule="none_failed_min_one_success")
+#     end = EmptyOperator(task_id="end", trigger_rule="none_failed_min_one_success")
+#
+#     # Build each dimension group and connect linearly
+#     for dim in DIM_TABLES:
+#         last_task = dimension_flow(dim)
+#         start >> last_task >> dimensions_complete
+#
+#     dimensions_complete >> end
+
+
+
+
+
+______________________________________________________________________________________
+
+
+
+# ========================================================================
+    # Process Fact Tables After Dimensions
+    # ========================================================================
+
+    # for fact_name in FACT_TABLES:
+    #     with TaskGroup(group_id=f'process_{fact_name}') as fact_group:
+    #
+    #         # Get config for this fact table
+    #         fact_config = CONFIG[fact_name]
+    #
+    #         # Step 1: Check updates and stage
+    #         check_result = check_updates_and_stage(fact_name)
+    #
+    #         # Step 2: Decide whether to merge or skip
+    #         branch_task = decide_merge(check_result, fact_name)
+    #
+    #         # Step 3a: Merge staging → DWH (insert-only for facts)
+    #         merge_task = SQLExecuteQueryOperator(
+    #             task_id=f'merge_{fact_name}',
+    #             postgres_conn_id=PG_CONN_ID,
+    #             sql=str(fact_config.merge_sql),
+    #             params={  # values for the {{ ... }} placeholders
+    #                 "DWH_SCHEMA": DWH_SCHEMA,
+    #                 "STAGING_SCHEMA": STAGING_SCHEMA,
+    #             },
+    #             trigger_rule='none_failed'
+    #         )
+    #
+    #         # Step 3b: Skip endpoint (if no changes)
+    #         skip_task = EmptyOperator(
+    #             task_id=f'end_{fact_name}',
+    #             trigger_rule='none_failed'
+    #         )
+    #
+    #         # Step 4: Update watermarks after successful merge
+    #         update_wm_task = update_watermarks_after_merge(
+    #             check_result,
+    #             fact_name
+    #         )
+    #
+    #         # Define task dependencies within group
+    #         check_result >> branch_task
+    #         branch_task >> [merge_task, skip_task]
+    #         merge_task >> update_wm_task
+    #
+    #     # Connect fact group to DAG milestones
+    #     dimensions_complete >> fact_group >> facts_complete
+    #
+    # # Final connection
+    # facts_complete >> end
+# instantiate
+# incremental_dag = incremental_update_pipeline()

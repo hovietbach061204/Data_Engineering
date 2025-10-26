@@ -1,10 +1,7 @@
--- T-SQL
 USE CompanyX;
 SET NOCOUNT ON;
 
--- Watermarks passed as parameters (Jinja2 templating)
-DECLARE @WM_SalesTerritory DATETIME = '{{ watermark_dict["Sales.SalesTerritory"] }}';
-DECLARE @WM_CountryRegion DATETIME = '{{ watermark_dict["Person.CountryRegion"] }}';
+DECLARE @WM DATETIME = '{{ watermark }}';
 
 WITH vTerritoryWithCountry AS (
     SELECT
@@ -22,8 +19,8 @@ WITH vTerritoryWithCountry AS (
     LEFT JOIN Person.CountryRegion cr WITH (INDEX(IX_CountryRegion_ModifiedDate))
         ON st.CountryRegionCode = cr.CountryRegionCode
     WHERE
-        st.ModifiedDate > @WM_SalesTerritory OR
-        cr.ModifiedDate > @WM_CountryRegion
+        st.ModifiedDate > @WM OR
+        cr.ModifiedDate > @WM
 )
 
 SELECT
@@ -35,7 +32,6 @@ SELECT
     SalesLastYear,
     CostYTD,
     CostLastYear,
-    -- StartDate = Latest ModifiedDate from contributing tables
     (
         SELECT MAX(v)
         FROM (VALUES

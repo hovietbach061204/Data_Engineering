@@ -1,11 +1,7 @@
--- airflow-docker/dags/sql/mssql_incremental/check_updates_DimProduct.sql
 USE CompanyX;
 SET NOCOUNT ON;
 
-DECLARE @WM_Product DATETIME = '{{ watermark_dict["Production.Product"] }}';
-DECLARE @WM_ProductModel DATETIME = '{{ watermark_dict["Production.ProductModel"] }}';
-DECLARE @WM_ProductCategory DATETIME = '{{ watermark_dict["Production.ProductCategory"] }}';
-DECLARE @WM_ProductSubcategory DATETIME = '{{ watermark_dict["Production.ProductSubcategory"] }}';
+DECLARE @WM DATETIME = '{{ watermark }}';
 
 WITH XMLNAMESPACES (
     'http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription' AS p1,
@@ -38,10 +34,10 @@ vProductAndDescription AS (
     LEFT JOIN Production.ProductCategory pc WITH (INDEX(IX_ProductCategory_ModifiedDate))
         ON ps.ProductCategoryID = pc.ProductCategoryID
     WHERE
-        p.ModifiedDate > @WM_Product OR
-        pm.ModifiedDate > @WM_ProductModel OR
-        ps.ModifiedDate > @WM_ProductSubcategory OR
-        pc.ModifiedDate > @WM_ProductCategory
+        p.ModifiedDate > @WM OR
+        pm.ModifiedDate > @WM OR
+        ps.ModifiedDate > @WM OR
+        pc.ModifiedDate > @WM
 )
 
 SELECT

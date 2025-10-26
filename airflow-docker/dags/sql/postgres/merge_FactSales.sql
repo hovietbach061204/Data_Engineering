@@ -6,35 +6,7 @@ DECLARE
     rows_inserted INT := 0;
 BEGIN
     -- Insert new fact records (no SCD logic - facts are immutable)
-    WITH inserted_rows AS (
-        INSERT INTO {{ DWH_SCHEMA }}."FactSales" (
-            "ProductKey",
-            "PromotionKey",
-            "CustomerKey",
-            "TerritoryKey",
-            "StoreKey",
-            "SaleReasonKey",
-            "ShipMethodKey",
-            "SalesOrderID",
-            "SalesOrderDetail",
-            "OrderQty",
-            "UnitPrice",
-            "UnitPriceDiscount",
-            "OrderDateKey",
-            "DueDateKey",
-            "ShipDateKey",
-            "Status",
-            "OnlineOrderFlag",
-            "TaxAllocated",
-            "Freight_Allocated",
-            "TotalDueTime",
-            "LineAmountSource",
-            "SalesInfoModifiedDate",
-            "LineAmount_Gross",
-            "LineDiscountAmount",
-            "LineAmount_Net",
-            "TotalDue_Line"
-        )
+    WITH new_facts AS (
         SELECT
             -- Resolve ProductKey from DimProduct using ProductID
             COALESCE(
@@ -86,7 +58,7 @@ BEGIN
                 -1
             ) AS "StoreKey",
 
-            -- Resolve SaleReasonKey from DimSalesReason (using SalesOrderID + SalesReasonID)
+            -- Resolve SaleReasonKey from DimSalesReason (using SalesOrderID)
             COALESCE(
                 (SELECT sr."ReasonKey"
                  FROM {{ DWH_SCHEMA }}."DimSalesReason" sr
@@ -129,16 +101,74 @@ BEGIN
 
         FROM {{ STAGING_SCHEMA }}."FactSales" AS stg
 
-        -- Anti-join: Only insert if this combination doesn't exist yet
-        LEFT JOIN {{ DWH_SCHEMA }}."FactSales" AS tgt
-            ON tgt."SalesOrderID" = stg."SalesOrderID"
-            AND tgt."SalesOrderDetail" = stg."SalesOrderDetail"
-
-        WHERE tgt."FactSaleKey" IS NULL
-
-        RETURNING "FactSaleKey"
+        -- Anti-join: Only process rows that don't exist yet
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM {{ DWH_SCHEMA }}."FactSales" tgt
+            WHERE tgt."SalesOrderID" = stg."SalesOrderID"
+              AND tgt."SalesOrderDetail" = stg."SalesOrderDetail"
+        )
+    ),
+    inserted_rows AS (
+        INSERT INTO {{ DWH_SCHEMA }}."FactSales" (
+            "ProductKey",
+            "PromotionKey",
+            "CustomerKey",
+            "TerritoryKey",
+            "StoreKey",
+            "SaleReasonKey",
+            "ShipMethodKey",
+            "SalesOrderID",
+            "SalesOrderDetail",
+            "OrderQty",
+            "UnitPrice",
+            "UnitPriceDiscount",
+            "OrderDateKey",
+            "DueDateKey",
+            "ShipDateKey",
+            "Status",
+            "OnlineOrderFlag",
+            "TaxAllocated",
+            "Freight_Allocated",
+            "TotalDueTime",
+            "LineAmountSource",
+            "SalesInfoModifiedDate",
+            "LineAmount_Gross",
+            "LineDiscountAmount",
+            "LineAmount_Net",
+            "TotalDue_Line"
+        )
+        SELECT
+            "ProductKey",
+            "PromotionKey",
+            "CustomerKey",
+            "TerritoryKey",
+            "StoreKey",
+            "SaleReasonKey",
+            "ShipMethodKey",
+            "SalesOrderID",
+            "SalesOrderDetail",
+            "OrderQty",
+            "UnitPrice",
+            "UnitPriceDiscount",
+            "OrderDateKey",
+            "DueDateKey",
+            "ShipDateKey",
+            "Status",
+            "OnlineOrderFlag",
+            "TaxAllocated",
+            "Freight_Allocated",
+            "TotalDueTime",
+            "LineAmountSource",
+            "SalesInfoModifiedDate",
+            "LineAmount_Gross",
+            "LineDiscountAmount",
+            "LineAmount_Net",
+            "TotalDue_Line"
+        FROM new_facts
+        RETURNING "FactSalesKey"
     )
     SELECT COUNT(*) INTO rows_inserted FROM inserted_rows;
 
-    RAISE NOTICE 'FactSales merge: % rows inserted', rows_inserted;
+    RAISE NOTICE 'FactSales merge completed: % rows inserted', rows_inserted;
 END $$;

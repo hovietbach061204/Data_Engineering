@@ -10,14 +10,25 @@ CREATE TABLE IF NOT EXISTS metadata.watermarks (
 -- Seed once (safe to re-run)
 INSERT INTO metadata.watermarks (table_name, last_watermark)
 VALUES
-  ('DimCustomer',    CURRENT_DATE),
-  ('DimProduct',     CURRENT_DATE),
-  ('DimPromotion',   CURRENT_DATE),
-  ('DimSalesReason', CURRENT_DATE),
-  ('DimShipMethod',  CURRENT_DATE),
-  ('DimStore',       CURRENT_DATE),
-  ('DimTerritory',   CURRENT_DATE),
-  ('FactSales',      CURRENT_DATE)
+  ('Sales.Customer',                '1900-01-01'),
+  ('Person.Person',                 '1900-01-01'),
+  ('Person.BusinessEntityAddress',  '1900-01-01'),
+  ('Person.AddressType',            '1900-01-01'),
+  ('Person.EmailAddress',           '1900-01-01'),
+  ('Person.Address',                '1900-01-01'),
+  ('Person.StateProvince',          '1900-01-01'),
+  ('Person.CountryRegion',          '1900-01-01'),
+  ('Production.Product',            '1900-01-01'),
+  ('Production.ProductCategory',    '1900-01-01'),
+  ('Production.ProductSubcategory', '1900-01-01'),
+  ('Production.ProductModel',       '1900-01-01'),
+  ('Sales.SpecialOffer',            '1900-01-01'),
+  ('Sales.SalesReason',             '1900-01-01'),
+  ('Purchasing.ShipMethod',         '1900-01-01'),
+  ('Sales.Store',                   '1900-01-01'),
+  ('Sales.SalesTerritory',          '1900-01-01'),
+  ('Sales.SalesOrderHeader',        '1900-01-01'),
+  ('Sales.SalesOrderDetail',        '1900-01-01')
 ON CONFLICT (table_name) DO NOTHING;
 
 -- Update function

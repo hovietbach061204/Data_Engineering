@@ -1,13 +1,7 @@
--- airflow-docker/dags/sql/mssql_incremental/check_updates_DimStore.sql
 USE CompanyX;
 SET NOCOUNT ON;
 
-DECLARE @WM_Store DATETIME = '{{ watermark_dict["Sales.Store"] }}';
-DECLARE @WM_BusinessEntityAddress DATETIME = '{{ watermark_dict["Person.BusinessEntityAddress"] }}';
-DECLARE @WM_Address DATETIME = '{{ watermark_dict["Person.Address"] }}';
-DECLARE @WM_StateProvince DATETIME = '{{ watermark_dict["Person.StateProvince"] }}';
-DECLARE @WM_CountryRegion DATETIME = '{{ watermark_dict["Person.CountryRegion"] }}';
-DECLARE @WM_AddressType DATETIME = '{{ watermark_dict["Person.AddressType"] }}';
+DECLARE @WM DATETIME = '{{ watermark }}';
 
 WITH StoreWithAddresses AS (
     SELECT
@@ -37,12 +31,12 @@ WITH StoreWithAddresses AS (
     INNER JOIN Person.AddressType AS atp WITH (INDEX(IX_AddressType_ModifiedDate))
         ON atp.AddressTypeID = bea.AddressTypeID
     WHERE
-        s.ModifiedDate > @WM_Store OR
-        bea.ModifiedDate > @WM_BusinessEntityAddress OR
-        a.ModifiedDate > @WM_Address OR
-        sp.ModifiedDate > @WM_StateProvince OR
-        cr.ModifiedDate > @WM_CountryRegion OR
-        atp.ModifiedDate > @WM_AddressType
+        s.ModifiedDate > @WM OR
+        bea.ModifiedDate > @WM OR
+        a.ModifiedDate > @WM OR
+        sp.ModifiedDate > @WM OR
+        cr.ModifiedDate > @WM OR
+        atp.ModifiedDate > @WM
 ),
 StoreWithDemographics AS (
     SELECT

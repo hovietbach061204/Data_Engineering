@@ -2,13 +2,8 @@
 USE CompanyX;
 SET NOCOUNT ON;
 
--- Watermarks passed as parameters (Jinja2 templating)
-DECLARE @WM_Customer DATETIME = '{{ watermark_dict["Sales.Customer"] }}';
-DECLARE @WM_Person DATETIME = '{{ watermark_dict["Person.Person"] }}';
-DECLARE @WM_EmailAddress DATETIME = '{{ watermark_dict["Person.EmailAddress"] }}';
-DECLARE @WM_Address DATETIME = '{{ watermark_dict["Person.Address"] }}';
-DECLARE @WM_StateProvince DATETIME = '{{ watermark_dict["Person.StateProvince"] }}';
-DECLARE @WM_CountryRegion DATETIME = '{{ watermark_dict["Person.CountryRegion"] }}';
+-- Single watermark for dimension table
+DECLARE @WM DATETIME = '{{ watermark }}';
 
 -- Reuse exact same query logic from DimCustomer.sql, just add watermark filter
 WITH vIndividualCustomer AS (
@@ -48,16 +43,15 @@ WITH vIndividualCustomer AS (
         ON ea.BusinessEntityID = p.BusinessEntityID
     WHERE c.StoreID IS NULL
       AND (
-          c.ModifiedDate > @WM_Customer OR
-          p.ModifiedDate > @WM_Person OR
-          ea.ModifiedDate > @WM_EmailAddress OR
-          a.ModifiedDate > @WM_Address OR
-          sp.ModifiedDate > @WM_StateProvince OR
-          cr.ModifiedDate > @WM_CountryRegion
+          c.ModifiedDate > @WM OR
+          p.ModifiedDate > @WM OR
+          ea.ModifiedDate > @WM OR
+          a.ModifiedDate > @WM OR
+          sp.ModifiedDate > @WM OR
+          cr.ModifiedDate > @WM
       )
 ),
 vPersonDemographics AS (
-    -- Same as original script (demographics parsing)
     SELECT
         p.BusinessEntityID,
         [ref].value(N'declare default element namespace "http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey";
@@ -112,7 +106,6 @@ SELECT
     pd.TotalPurchaseYTD,
     pd.YearlyIncome,
     pd.DateFirstPurchase,
-    -- StartDate = Latest ModifiedDate from all contributing tables
     (
         SELECT MAX(v)
         FROM (VALUES

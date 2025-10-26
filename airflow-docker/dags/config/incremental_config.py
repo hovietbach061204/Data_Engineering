@@ -23,7 +23,7 @@ class TableConfig:
     kind: Kind                       # "dimension" | "fact"
     business_key: Optional[str]      # None for facts
     sources: List[str]               # MSSQL source tables used for watermarking
-    watermark_column: str = "startdate"
+    watermark_column: str = "StartDate"
     scd_type: Optional[int] = None   # 1 or 2 for dims, None for facts
     check_sql: Path = Path()         # MSSQL: change detection / extract delta
     merge_sql: Path  = Path()        # Postgres: merge from staging -> dwh
@@ -34,7 +34,7 @@ def _cfg(
     *,
     business_key: Optional[str],
     sources: List[str],
-    watermark_column: str = "startdate",
+    watermark_column: str = "StartDate",
     scd_type: Optional[int] = None,
 ) -> TableConfig:
     return TableConfig(

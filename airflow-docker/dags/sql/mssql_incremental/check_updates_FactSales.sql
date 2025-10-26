@@ -2,9 +2,8 @@
 USE CompanyX;
 SET NOCOUNT ON;
 
--- Watermarks passed as parameters (Jinja2 templating)
-DECLARE @WM_SalesOrderHeader DATETIME = '{{ watermark_dict["Sales.SalesOrderHeader"] }}';
-DECLARE @WM_SalesOrderDetail DATETIME = '{{ watermark_dict["Sales.SalesOrderDetail"] }}';
+-- Single watermark for fact table
+DECLARE @WM DATETIME = '{{ watermark }}';
 
 WITH vSalesOrders AS (
     SELECT
@@ -14,9 +13,8 @@ WITH vSalesOrders AS (
         sod.SpecialOfferID AS PromotionID,
         soh.CustomerID,
         soh.TerritoryID,
-        soh.ShipToAddressID AS StoreID,  -- Assuming ShipTo = Store
-        -- Note: SalesReasonID needs to be joined from SalesOrderHeaderSalesReason
-        NULL AS SaleReasonID,  -- Will be populated if needed
+        soh.ShipToAddressID AS StoreID,
+        NULL AS SaleReasonID,
         soh.ShipMethodID,
         sod.OrderQty,
         sod.UnitPrice,
@@ -26,14 +24,11 @@ WITH vSalesOrders AS (
         CAST(FORMAT(soh.ShipDate, 'yyyyMMdd') AS INT) AS ShipDateKey,
         soh.Status,
         soh.OnlineOrderFlag,
-        -- Calculate allocated tax and freight per line
         (soh.TaxAmt * sod.LineTotal / soh.SubTotal) AS TaxAllocated,
         (soh.Freight * sod.LineTotal / soh.SubTotal) AS Freight_Allocated,
         soh.TotalDue AS TotalDueTime,
         sod.LineTotal AS LineAmountSource,
-        -- Metadata
         GREATEST(soh.ModifiedDate, sod.ModifiedDate) AS SalesInfoModifiedDate,
-        -- Calculated amounts
         (sod.OrderQty * sod.UnitPrice) AS LineAmount_Gross,
         (sod.OrderQty * sod.UnitPrice * sod.UnitPriceDiscount) AS LineDiscountAmount,
         sod.LineTotal AS LineAmount_Net,
@@ -44,8 +39,8 @@ WITH vSalesOrders AS (
     INNER JOIN Sales.SalesOrderHeader soh WITH (INDEX(IX_SalesOrderHeader_ModifiedDate))
         ON sod.SalesOrderID = soh.SalesOrderID
     WHERE
-        soh.ModifiedDate > @WM_SalesOrderHeader OR
-        sod.ModifiedDate > @WM_SalesOrderDetail
+        soh.ModifiedDate > @WM OR
+        sod.ModifiedDate > @WM
 )
 
 SELECT
@@ -75,7 +70,6 @@ SELECT
     LineDiscountAmount,
     LineAmount_Net,
     TotalDue_Line,
-    -- StartDate = Latest ModifiedDate from contributing tables
     (
         SELECT MAX(v)
         FROM (VALUES
